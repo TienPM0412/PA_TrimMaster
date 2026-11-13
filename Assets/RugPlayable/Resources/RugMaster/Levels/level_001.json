@@ -1,0 +1,92 @@
+{
+    "index": 1,
+    "cols": 22,
+    "rows": 18,
+    "unitsPerCell": 1,
+    "channelCapacity": 220,
+    "name": "Level_001",
+    "palette": [
+        "cream",
+        "coral",
+        "navy",
+        "mustard",
+        "sage",
+        "plum",
+        "teal",
+        "rose",
+        "rust",
+        "sky",
+        "charcoal",
+        "peach"
+    ],
+    "grid": [
+        "4444444444444444444444",
+        "4444444444444444444444",
+        "4444444444444444444444",
+        "4444444444444444444444",
+        "4444333344111114444444",
+        "4443333331111111444444",
+        "4443333331111111444444",
+        "4443333331111111444444",
+        "4443333331111111444444",
+        "4443333331111111444444",
+        "4444333334111114444444",
+        "4444444222224444444444",
+        "4444442222222444444444",
+        "4444442222222444444444",
+        "4444442222222444444444",
+        "4444442222222444444444",
+        "4444444222224444444444",
+        "4444444444444444444444"
+    ],
+    "hints": [
+        "Drag to trim the fluffy pile.",
+        "Match fibers to the front baskets."
+    ],
+    "baskets": [
+        {
+            "column": 0,
+            "capacity": 92,
+            "tied": -1,
+            "color": "sage",
+            "hidden": false
+        },
+        {
+            "column": 1,
+            "capacity": 45,
+            "tied": -1,
+            "color": "coral",
+            "hidden": false
+        },
+        {
+            "column": 2,
+            "capacity": 39,
+            "tied": -1,
+            "color": "mustard",
+            "hidden": false
+        },
+        {
+            "column": 0,
+            "capacity": 38,
+            "tied": -1,
+            "color": "navy",
+            "hidden": false
+        },
+        {
+            "column": 1,
+            "capacity": 91,
+            "tied": -1,
+            "color": "sage",
+            "hidden": false
+        },
+        {
+            "column": 2,
+            "capacity": 91,
+            "tied": -1,
+            "color": "sage",
+            "hidden": false
+        }
+    ],
+    "ribbons": [],
+    "clips": []
+}
