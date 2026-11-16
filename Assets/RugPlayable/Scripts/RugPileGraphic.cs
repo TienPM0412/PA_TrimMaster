@@ -4,12 +4,16 @@ using System.Collections.Generic;
 
 namespace RugMaster
 {
-    // One native uGUI mesh batches the exact four original tuft pieces for every uncut cell.
+    // One native uGUI mesh batches the exact four original tuft pieces per cell.
+    // drawUncut=false (mặc định khi có ảnh bake): ô chưa cạo nằm trong ảnh "pile-full" + mask (RugUIPileMask),
+    // mesh này chỉ vẽ vài ô vừa bị cạo đang nảy/mờ dần, nên rebuild mỗi frame rất nhẹ.
+    // drawUncut=true: vẽ mọi ô như cũ (dùng để bake ảnh, hoặc fallback khi thiếu ảnh bake).
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class RugPileGraphic : MaskableGraphic
     {
         public int previewLevel = 1;
         public bool shadows;
+        public bool drawUncut = true;
         private RugSimulation simulation;
         private OriginalLayout layout;
         private int lastTrimmed = -1;
@@ -58,7 +62,7 @@ namespace RugMaster
             CollapsingCellCount=0;
             if (simulation == null)
             {
-                var d = RugPlayableAssets.Current.level;
+                var d = RugPlayableAssets.Current.Level(PAManager.HasInstance ? PAManager.Ins.SelectedLevel : 1);
                 if (d == null) return;
                 simulation=new RugSimulation(d);
                 maskable=true;
@@ -67,6 +71,7 @@ namespace RugMaster
             }
             foreach (var cell in simulation.Cells)
             {
+                if(!drawUncut&&!cell.Trimmed)continue;
                 var pose=RugPilePose.Evaluate(cell,simulation.Elapsed);
                 if(cell.Trimmed&&(shadows?pose.shadowAlpha:pose.alpha)<=0)continue;
                 RenderedCellCount++;

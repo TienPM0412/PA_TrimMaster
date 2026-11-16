@@ -97,7 +97,7 @@ namespace RugMaster
             {
                 placing = Mathf.Max(0, placing - deltaTime);
                 visualBlade = Vector2.Lerp(placeFrom, blade, 1 - Mathf.Pow(placing / 0.12f, 3));
-                if (placing == 0) {}
+                if (placing == 0 && SoundManager.HasInstance) SoundManager.Ins.PlayPlace();
                 previous = blade; return;
             }
             if ((blade - previous).sqrMagnitude > 0.01f)

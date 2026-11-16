@@ -10,12 +10,19 @@ namespace RugMaster
         public Sprite sprite;
         public Font font;
         public Material material;
+        public AudioClip audio;
         [TextArea] public string json;
     }
     public sealed class RugPlayableAssets : MonoBehaviour
     {
         public RugPlayableAssetEntry[] entries = new RugPlayableAssetEntry[0];
-        public LevelDefinition level;
+        // Dữ liệu level đã parse lúc Bake (index 0 = level 1), lấy từ PAManager.levelFiles.
+        public LevelDefinition[] levels = new LevelDefinition[0];
+        public LevelDefinition Level(int level)
+        {
+            if (levels == null || levels.Length == 0) throw new InvalidOperationException("Scene has no baked levels");
+            return levels[Mathf.Clamp(level, 1, levels.Length) - 1];
+        }
         public OriginalManifest originalManifest;
         public OriginalDom originalDom;
         public RugPresentationManifest presentationManifest;
@@ -46,6 +53,7 @@ namespace RugMaster
             if (typeof(T) == typeof(Sprite)) return entry.sprite as T;
             if (typeof(T) == typeof(Font)) return entry.font as T;
             if (typeof(T) == typeof(Material)) return entry.material as T;
+            if (typeof(T) == typeof(AudioClip)) return entry.audio as T;
             throw new InvalidOperationException("Unsupported baked asset type: " + typeof(T).Name);
         }
         public static string Json(string path)

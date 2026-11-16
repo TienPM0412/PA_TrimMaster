@@ -24,6 +24,8 @@ namespace RugMaster
         private Vector2 flingFrom;
         private float flingAngle;
         private readonly List<Track> channels=new List<Track>();
+        private Mask revealMask;
+        private bool revealClipOn;
         private readonly System.Random random=new System.Random(77219);
         private sealed class Track{public RectTransform rect;public Vector2 position;public CanvasGroup group;}
         public bool BlocksInput=>stage==Stage.Intro&&clock<1.41f||stage==Stage.Finishing;
@@ -60,7 +62,10 @@ namespace RugMaster
             var rugFit=view.rugFit;Move(rugFit,world);
             var shadow=rugFit.Find("Rug shadow");var binding=rugFit.Find("Original braided binding");
             rug=RugOriginalView.Rect(rugFit,"Rug group",0,0,1080,1920);
-            reveal=RugOriginalView.Rect(rug,"Roll reveal mask",0,0,1080,1920);reveal.gameObject.AddComponent<RectMask2D>();
+            // Mask stencil, không dùng RectMask2D: Luna (web) chỉ cull cả graphic theo RectMask2D chứ không cắt
+            // (MaskableGraphic.SetClipRect để TODO), còn Mask stencil được hỗ trợ đầy đủ. Chỉ bật lúc trải thảm, xem RevealClip.
+            reveal=RugOriginalView.Rect(rug,"Roll reveal mask",0,0,1080,1920);
+            revealMask=StencilMask(reveal);
             inner=RugOriginalView.Rect(reveal,"Rug inner - squash around center",0,0,1080,1920);
             var clipping=view.tuftMesh.transform.parent;
             Move(shadow,inner);Move(view.basePile.transform,inner);Move(view.shade.transform,inner);Move(clipping,inner);
@@ -81,8 +86,9 @@ namespace RugMaster
             {if(node==null)continue;var r=(RectTransform)node;channels.Add(new Track{rect=r,position=r.anchoredPosition,group=Group(r)});}
             flash=Image(inner,"Completion flash",RugOriginalAssets.Texture("soft"));
             RugOriginalView.Position(flash.rectTransform,new Rect(-180,-4,1440,1200));flash.material=RugPresentationAssets.Additive;
-            sweepMask=RugOriginalView.Rect(rug,"Completion sheen clipping",60,196,960,800);sweepMask.gameObject.AddComponent<RectMask2D>();
+            sweepMask=RugOriginalView.Rect(rug,"Completion sheen clipping",60,196,960,800);
             sweep=Image(sweepMask,"Final light sweep",RugPresentationAssets.Texture("sweep"));sweep.material=RugPresentationAssets.Additive;
+            SetStencilMask(StencilMask(sweepMask),true);
             sweep.rectTransform.pivot=new Vector2(0.5f,0.5f);sweep.rectTransform.sizeDelta=new Vector2(520,1300);
             sweep.rectTransform.localEulerAngles=new Vector3(0,0,-0.26f*Mathf.Rad2Deg);
         }
@@ -133,11 +139,29 @@ namespace RugMaster
                 if(clock>=2.75f&&!ManualClock&&!winHandled){winHandled=true;RugGameFlow.OnWinPresentationFinished();}
             }
         }
-        private void SetReveal(Rect clip)
+        private void SetReveal(Rect clip,bool clipping=false)
         {
             RugOriginalView.Position(reveal,clip);
             inner.anchoredPosition=new Vector2(540-clip.x,-(596-clip.y));
+            RevealClip(clipping);
         }
+        // Chỉ bật mask khi thảm đang trải (intro); xong thì tắt để thảm vẽ/batch như bình thường khi chơi.
+        // Mask tự cắt theo rect của reveal (SetReveal đổi rect mỗi frame), không cần cập nhật gì thêm.
+        private void RevealClip(bool on)
+        {
+            if(on==revealClipOn)return;
+            revealClipOn=on;SetStencilMask(revealMask,on);
+        }
+        // Graphic trắng cùng object làm vùng stencil, không hiện ra (showMaskGraphic=false).
+        private static Mask StencilMask(RectTransform rect)
+        {
+            var shape=rect.gameObject.AddComponent<RawImage>();shape.texture=Texture2D.whiteTexture;shape.raycastTarget=false;
+            var mask=rect.gameObject.AddComponent<Mask>();mask.showMaskGraphic=false;
+            SetStencilMask(mask,false);return mask;
+        }
+        // Tắt cả Mask lẫn graphic của nó: Mask tắt mà graphic còn bật thì sẽ vẽ ra một hình chữ nhật trắng.
+        private static void SetStencilMask(Mask mask,bool on)
+        {mask.enabled=on;mask.graphic.enabled=on;}
         private void ApplyChannels(float alpha,float dy)
         {foreach(var t in channels){t.rect.anchoredPosition=t.position+new Vector2(0,-dy);t.group.alpha=alpha;}}
         private void SetFooter(bool show,float dy)
@@ -157,7 +181,7 @@ namespace RugMaster
                 bool rolling=clock<1.41f;roll.gameObject.SetActive(rolling&&g.visible);
                 if(rolling)
                 {
-                    SetReveal(g.clip);RugOriginalView.Position(rollBody.rectTransform,g.body);RugOriginalView.Position(rollShadow.rectTransform,g.shadow);
+                    SetReveal(g.clip,true);RugOriginalView.Position(rollBody.rectTransform,g.body);RugOriginalView.Position(rollShadow.rectTransform,g.shadow);
                     var c=rollShadow.color;c.a=g.shadowAlpha;rollShadow.color=c;caps.Set(s,g,RugRollCapsGraphic.Hex(level.colors[0]));
                 }
                 else SetReveal(new Rect(0,0,1080,1920));

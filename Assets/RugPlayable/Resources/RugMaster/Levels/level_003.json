@@ -1,0 +1,91 @@
+{
+    "index": 3,
+    "cols": 22,
+    "rows": 18,
+    "unitsPerCell": 1,
+    "channelCapacity": 170,
+    "name": "Level_003",
+    "palette": [
+        "cream",
+        "coral",
+        "navy",
+        "mustard",
+        "sage",
+        "plum",
+        "teal",
+        "rose",
+        "rust",
+        "sky",
+        "charcoal",
+        "peach"
+    ],
+    "grid": [
+        "5555555555555555555555",
+        "555555555aaa5555555555",
+        "555555555a3a5555555555",
+        "55555555a333a555555555",
+        "55555555a333a555555555",
+        "5555555a00000a55555555",
+        "5555555a00000a55555555",
+        "5555555a00000a55555555",
+        "555555a3333333a5555555",
+        "555555a3333333a5555555",
+        "55555a033333330a555555",
+        "55555a000000000a555555",
+        "5555a00000000000a55555",
+        "5555a30000000003a55555",
+        "555a333a33333a333a5555",
+        "555a3333333333333a5555",
+        "555aaaaaaaaaaaaaaa5555",
+        "5555555555555555555555"
+    ],
+    "hints": [
+        "Fill a basket to reveal the next one."
+    ],
+    "baskets": [
+        {
+            "column": 0,
+            "capacity": 83,
+            "tied": -1,
+            "color": "plum",
+            "hidden": false
+        },
+        {
+            "column": 1,
+            "capacity": 54,
+            "tied": -1,
+            "color": "mustard",
+            "hidden": false
+        },
+        {
+            "column": 2,
+            "capacity": 48,
+            "tied": -1,
+            "color": "charcoal",
+            "hidden": false
+        },
+        {
+            "column": 0,
+            "capacity": 46,
+            "tied": -1,
+            "color": "cream",
+            "hidden": false
+        },
+        {
+            "column": 1,
+            "capacity": 83,
+            "tied": -1,
+            "color": "plum",
+            "hidden": false
+        },
+        {
+            "column": 2,
+            "capacity": 82,
+            "tied": -1,
+            "color": "plum",
+            "hidden": false
+        }
+    ],
+    "ribbons": [],
+    "clips": []
+}

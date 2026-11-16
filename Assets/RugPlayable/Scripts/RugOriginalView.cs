@@ -36,6 +36,12 @@ namespace RugMaster
         [SerializeField] private int basketNumberFontSize=72;
         public RawImage[] boosters = new RawImage[2];
         public RugPileGraphic tuftMesh, shadowMesh;
+        // Ảnh thảm nguyên lông bake sẵn (Rug Playable/Bake Assets): ô đã cạo bị khoét qua mask = shadeTexture.
+        public RawImage pileImage;
+        private Material pileMaterial;
+        public const string PileImageName="Uncut pile image";
+        public static string PileImageKey(int sourceLevel)=>$"pile-full-{sourceLevel:000}";
+        public const string PileMaskMaterial="RugMaster/OriginalUI/PileMask";
         public RectTransform modalRoot;
         [SerializeField] private Font fredoka;
         // false khi dựng/bind trong Editor (Rebuild Original UI Scene): không được chạm tới các manager.
@@ -50,7 +56,8 @@ namespace RugMaster
         private readonly Dictionary<(string,int),FlightSprite> flightSprites=new Dictionary<(string,int),FlightSprite>();
         public sealed class FlightSprite {public Rect uv;public Vector2 size;}
         private RugFiberTrail fiberTrail;
-        private sealed class FiberVisual {public RawImage image;public FlightSprite sprite;}
+        public RugFiberBatchGraphic pipeFiberBatch, dropFiberBatch, flyingFiberBatch;
+        private sealed class FiberVisual {public int id=-1;public FlightSprite sprite;}
         private int lastRearranges=-1,lastSweeps=-1;
         private int lastTrimmed=-1,lastMeter=-1,lastHead=-1,sourceLevel=1;
         private bool settingsOpen;
@@ -105,8 +112,23 @@ namespace RugMaster
 
             EventManager.AddListener<OnLevelLoadedEvent>(OnLevelLoaded);
             EventManager.AddListener<OnBoosterUnavailableEvent>(OnBoosterUnavailable);
+            RugGameFlow.Completed+=ShowWinPanel;
         }
         private void OnLevelLoaded(OnLevelLoadedEvent e)=>Bind(e.simulation,e.level);
+        // Màn diễn thắng xong -> bật panel thắng có sẵn trong scene (logo bấm vào mở store).
+        public RugWinPanel winPanel;
+        private void ShowWinPanel(){EnsureWinPanel(false);if(winPanel!=null)winPanel.Show();}
+        // Panel nằm trong overlayRoot (trên HUD, ngoài modalRoot vì ClearModal xoá hết con của modalRoot).
+        // Scene đã có panel thì dùng lại; rebuild=true (menu Editor) thì dựng lại từ đầu.
+        public void EnsureWinPanel(bool rebuild)
+        {
+            var parent=overlayRoot!=null?overlayRoot:content;
+            if(parent==null)return;
+            if(!rebuild&&winPanel==null){var found=parent.Find(RugWinPanel.PanelName);if(found!=null)winPanel=found.GetComponent<RugWinPanel>();}
+            if(rebuild||winPanel==null)winPanel=RugWinPanel.Build(parent,RugPlayableAssets.Load<Texture2D>(RugWinPanel.TitleKey));
+            else if(winPanel.playButton==null||winPanel.playButtonLayout<RugWinPanel.PlayButtonLayout)RugWinPanel.BuildPlayButton(winPanel);
+            winPanel.transform.SetAsLastSibling();
+        }
 
         public void BuildHierarchy()
         {
@@ -278,7 +300,7 @@ namespace RugMaster
             if(meter!=null)SetMeter(Mathf.Max(0,lastMeter));
             // Ống bao quanh: đúng kích thước ảnh, góc trên-trái tại (PipeImageLeft, PipeImageTop) như simulation tính đường đi của sợi.
             if(channel!=null&&channel.texture!=null)
-                Position(channel.rectTransform,new Rect(RugSimulation.PipeImageLeft,RugSimulation.PipeImageTop,channel.texture.width,channel.texture.height));
+                Position(channel.rectTransform,new Rect(RugSimulation.PipeImageLeft,RugSimulation.PipeImageTop,1043f,1071f));
             PutFibersBehindPipe();
         }
 
@@ -296,7 +318,7 @@ namespace RugMaster
 
         private void BindControls()
         {
-            for(int i=0;i<3;i++){int width=new[]{1,2,4}[i];BindButton(FindUI("Head hit target "+width),()=>ControllerManager.Ins.SetHead(width));}
+            for(int i=0;i<3;i++){int width=new[]{1,2,4}[i];BindButton(FindUI("Head hit target "+width),()=>{SoundManager.Ins.PlayButton();ControllerManager.Ins.SetHead(width);});}
             BindButton(boosters[0].transform,()=>PressBooster(0));
             BindButton(boosters[1].transform,()=>PressBooster(1));
         }
@@ -311,9 +333,18 @@ namespace RugMaster
         /// <summary>Bấm booster (0 = Rearrange, 1 = Sweep). Hết lượt thì BoosterManager mở popup Buy Booster; mua xong popup gọi lại hàm này.</summary>
         public void PressBooster(int index)
         {
-            bool used=BoosterManager.Ins.UseBooster(index==1);
-            boosterPressAt[index]=Time.unscaledTime;boosterPressUsed[index]=used;
-            
+            bool sweep=index==1;
+            boosterPressAt[index]=Time.unscaledTime;
+            // Hết lượt miễn phí: bấm = mở store, đổi lại +1 lượt cho booster này (bấm lần nữa mới dùng).
+            if(BoosterManager.Ins.Count(sweep)<=0)
+            {
+                boosterPressUsed[index]=true;SoundManager.Ins.PlayButton();
+                BoosterManager.Ins.GetMoreViaInstall(sweep);
+                return;
+            }
+            bool used=BoosterManager.Ins.UseBooster(sweep);
+            boosterPressUsed[index]=used;
+            if(used)SoundManager.Ins.PlayButton();
         }
         private void OnBoosterUnavailable(OnBoosterUnavailableEvent e)=>ShowToast(e.message);
 
@@ -433,7 +464,8 @@ namespace RugMaster
             if(boosterCounts[index]==null)EnsureBoosterSkins();
             if(boosterCounts[index]!=null)boosterCounts[index].text=Mathf.Max(0,value).ToString();
             if(boosterInfos[index]!=null)boosterInfos[index].SetActive(value>0);
-            if(boosterAdds[index]!=null)boosterAdds[index].SetActive(false); boosters[index].GetComponent<Button>().interactable=value>0;
+            // Hết lượt vẫn bấm được: hiện dấu + -> bấm mở store (InstallFullGame) và được +1 lượt (PressBooster).
+            if(boosterAdds[index]!=null)boosterAdds[index].SetActive(value<=0); boosters[index].GetComponent<Button>().interactable=true;
         }
         private void AnimateBoosters()
         {
@@ -505,7 +537,7 @@ namespace RugMaster
 
         public void Bind(RugSimulation model,int displayedLevel)
         {
-            simulation=model;sourceLevel=Constants.SourceIndex(displayedLevel);
+            simulation=model;fiberViews.Clear();sourceLevel=Constants.SourceIndex(displayedLevel);
             basePile.texture=RugOriginalAssets.Texture($"base-{sourceLevel:000}");
             BindHeader(displayedLevel);
             tuftMesh.Bind(model);shadowMesh.Bind(model);
@@ -514,6 +546,7 @@ namespace RugMaster
             shadeTexture=new Texture2D(model.Definition.cols,model.Definition.rows,TextureFormat.RGBA32,false)
                 {filterMode=FilterMode.Bilinear,wrapMode=TextureWrapMode.Clamp,name="Live uncut occlusion"};
             shade.texture=shadeTexture;
+            BindPileImage();
             lastTrimmed=lastMeter=lastHead=lastRearranges=lastSweeps=-1;lastBoosterLocked[0]=lastBoosterLocked[1]=-1;
             pendingUnlockPopup=null;wonAt=-1;settingsOpen=false;jamPopupShown=winHandled=false;
             
@@ -527,7 +560,8 @@ namespace RugMaster
             obstacleMarks=new RugObstacleMarks(marksRoot);
             if(Application.isPlaying)obstacleMarks.Build(model);
             ClearModal();
-            
+            if(winPanel!=null&&Application.isPlaying)winPanel.Hide(true);
+
             Refresh();
             if(initialized)StartTutorialIfNeeded();
             if(presentation!=null)presentation.Bind(model,initialized);
@@ -731,33 +765,41 @@ namespace RugMaster
 
         private void RefreshMarks()=>obstacleMarks?.Refresh(simulation);
 
+        public void EnsureFiberBatches()
+        {
+            pipeFiberBatch=EnsureFiberBatch(fibersRoot,pipeFiberBatch);
+            dropFiberBatch=EnsureFiberBatch(dropsRoot,dropFiberBatch);
+            flyingFiberBatch=EnsureFiberBatch(flyersRoot,flyingFiberBatch);
+        }
+        private static RugFiberBatchGraphic EnsureFiberBatch(RectTransform root,RugFiberBatchGraphic batch)
+        {
+            // Keep moving puff vertices from rebuilding the rug/HUD canvas batches.
+            var layerCanvas=root.GetComponent<Canvas>();
+            if(layerCanvas==null)layerCanvas=root.gameObject.AddComponent<Canvas>();
+            layerCanvas.overrideSorting=false;
+            if(batch==null)batch=root.GetComponentInChildren<RugFiberBatchGraphic>(true);
+            if(batch==null)batch=Rect(root,"Batched fibers",0,0,1080,1920).gameObject.AddComponent<RugFiberBatchGraphic>();
+            if(batch.GetComponent<CanvasRenderer>()==null)batch.gameObject.AddComponent<CanvasRenderer>();
+            batch.atlas=RugOriginalAssets.Texture("flight-atlas");batch.raycastTarget=false;batch.maskable=false;
+            return batch;
+        }
         private void RefreshFibers()
         {
-            while(fiberViews.Count<simulation.Fibers.Count)
+            if(pipeFiberBatch==null||dropFiberBatch==null||flyingFiberBatch==null)EnsureFiberBatches();
+            pipeFiberBatch.BeginFrame();dropFiberBatch.BeginFrame();flyingFiberBatch.BeginFrame();
+            while(fiberViews.Count<simulation.Fibers.Count)fiberViews.Add(new FiberVisual());
+            for(int i=0;i<simulation.Fibers.Count;i++)
             {
-                var image=Image(fibersRoot,"Fiber "+fiberViews.Count,new Rect());
-                image.texture=RugOriginalAssets.Texture("flight-atlas");
-                image.rectTransform.pivot=new Vector2(0.5f,0.5f);
-                fiberViews.Add(new FiberVisual{image=image});
+                var f=simulation.Fibers[i];var visual=fiberViews[i];
+                if(visual.id!=f.Id){visual.id=f.Id;visual.sprite=Flight(f.Color,f.Variant);}
+                var batch=f.Phase==FiberPhase.Channel||(f.Phase==FiberPhase.Flight&&f.FlightStage==2)?pipeFiberBatch:
+                    f.Phase==FiberPhase.Capture&&!f.Sweep&&f.Position.y-18<=RugFiberMotion.LipBottom?dropFiberBatch:flyingFiberBatch;
+                var sprite=visual.sprite;
+                batch.Add(f.Position,sprite.size*(f.VisualScale/0.28f),sprite.uv,f.Rotation);
             }
-            for(int i=0;i<fiberViews.Count;i++)
-            {
-                var visual=fiberViews[i];var v=visual.image;bool show=i<simulation.Fibers.Count;
-                if(v.gameObject.activeSelf!=show)v.gameObject.SetActive(show);
-                if(!show)continue;
-                var f=simulation.Fibers[i];var p=f.Position;
-                var parent=f.Phase==FiberPhase.Channel||(f.Phase==FiberPhase.Flight&&f.FlightStage==2)?fibersRoot:
-                    f.Phase==FiberPhase.Capture&&!f.Sweep&&p.y-18<=RugFiberMotion.LipBottom?dropsRoot:flyersRoot;
-                if(v.transform.parent!=parent)v.transform.SetParent(parent,false);
-                var sprite=Flight(f.Color,f.Variant);
-                if(visual.sprite!=sprite){visual.sprite=sprite;v.uvRect=sprite.uv;}
-                var rect=v.rectTransform;
-                rect.anchoredPosition=new Vector2(p.x,-p.y);rect.sizeDelta=sprite.size*(f.VisualScale/0.28f);
-                rect.localEulerAngles=new Vector3(0,0,-f.Rotation*Mathf.Rad2Deg);
-            }
-            // Cục bông phụ nối đuôi trong ống bao quanh (chỉ hiển thị, xem RugFiberTrail).
-            if(fiberTrail==null)fiberTrail=new RugFiberTrail(fibersRoot,dropsRoot,flyersRoot,Flight);
+            if(fiberTrail==null)fiberTrail=new RugFiberTrail(pipeFiberBatch,dropFiberBatch,flyingFiberBatch,Flight);
             fiberTrail.Update(simulation);
+            pipeFiberBatch.EndFrame();dropFiberBatch.EndFrame();flyingFiberBatch.EndFrame();
         }
         private FlightSprite Flight(string color,int variant)
         {
@@ -801,6 +843,31 @@ namespace RugMaster
             var image=Image(modalRoot,text+" button",rect,Texture2D.whiteTexture);
             image.color=primary?new Color32(232,90,75,255):new Color32(248,237,212,255);
             AddButton(image.rectTransform,action);Text(image.transform,text,new Rect(0,0,rect.width,rect.height),58,primary?Color.white:(Color)new Color32(74,52,38,255));
+        }
+
+        // Ảnh nguyên lông phủ đúng khung "Rounded pile clipping" (90,226,900,740), nằm dưới 2 mesh pile.
+        // Có ảnh bake + material: mesh chỉ vẽ ô đang bị cạo (pop). Thiếu ảnh: mesh vẽ mọi ô như cũ.
+        private void BindPileImage()
+        {
+            var clipping=tuftMesh.transform.parent;
+            if(pileImage==null){var found=clipping.Find(PileImageName);if(found!=null)pileImage=found.GetComponent<RawImage>();}
+            if(pileImage==null)pileImage=Image(clipping,PileImageName,new Rect(0,0,900,740));
+            pileImage.transform.SetSiblingIndex(0);
+            var texture=RugOriginalAssets.TryTexture(PileImageKey(sourceLevel));
+            var material=RugPlayableAssets.Load<Material>(PileMaskMaterial);
+            bool baked=texture!=null&&material!=null;
+            pileImage.gameObject.SetActive(baked);
+            tuftMesh.drawUncut=shadowMesh.drawUncut=!baked;
+            if(!baked)return;
+            pileImage.texture=texture;pileImage.color=Color.white;pileImage.raycastTarget=false;
+            if(!Application.isPlaying){pileImage.material=material;return;}
+            if(pileMaterial==null)pileMaterial=new Material(material){name="Uncut pile mask (runtime)"};
+            // Mask = shadeTexture (cols x rows, alpha 255 chưa cạo / 0 đã cạo, hàng 0 ở dưới) phủ Constants.RugRect.
+            // Đổi uv ảnh (khung 90,226,900,740; v=1 ở mép trên) sang uv của lưới ô.
+            var r=Constants.RugRect;
+            pileMaterial.SetTexture("_MaskTex",shadeTexture);
+            pileMaterial.SetVector("_MaskST",new Vector4(900/r.width,740/r.height,(90-r.x)/r.width,(r.yMax-226-740)/r.height));
+            pileImage.material=pileMaterial;
         }
 
         private static RugPileGraphic Pile(Transform parent,string name,bool shadow)
@@ -955,43 +1022,32 @@ namespace RugMaster
         private const float MeterTextInset=30;
         private static readonly Color MeterDarkText=new Color32(94,81,72,255);
         private static readonly Dictionary<string,Sprite> meterSprites=new Dictionary<string,Sprite>();
-        private RectTransform meterFillMask,meterRestMask;
-        private UnityEngine.UI.Image meterFill;
-        private Text meterPercentOn,meterPercentOff;
+        
+        public RugMeterFillGraphic meterFill;
+        private Text meterPercentOn;
         private void SetMeter(int percent)
         {
             if(meter==null)return;
             SetLocalSprite(meter,"meter-0",MeterAnchor);
             meter.texture=null;meter.color=Color.clear;meter.raycastTarget=false;
             EnsureMeterBar();
-            float k=Mathf.Clamp01(percent/100f);
-            meterFillMask.anchorMax=new Vector2(k,1);meterFillMask.offsetMax=Vector2.zero;
-            meterRestMask.anchorMin=new Vector2(k,0);meterRestMask.offsetMin=Vector2.zero;
-            meterFill.sprite=MeterSprite(percent>=100?"kit-loadFill-red":percent>=80?"kit-loadFill-orange":"kit-loadFill");
-            string value=percent>=100?"Full":percent+"%";
-            meterPercentOn.text=meterPercentOff.text=value;
+            string key=percent>=100?"kit-loadFill-red":percent>=80?"kit-loadFill-orange":"kit-loadFill";
+            meterFill.SetFill(Mathf.Clamp01(percent/100f),RugOriginalAssets.Texture(key));
+            meterPercentOn.text=percent>=100?"Full":percent+"%";
         }
         private void EnsureMeterBar()
         {
-            if(meterFill!=null)return;
+            if(meterFill!=null&&meterPercentOn!=null)return;
             var root=meter.rectTransform;var size=root.sizeDelta;
             var old=root.Find("Bar");if(old!=null)DestroyImmediate(old.gameObject);
             var bar=Rect(root,"Bar",0,0,0,0);Stretch(bar);
             var track=new GameObject("Track",typeof(RectTransform)).AddComponent<UnityEngine.UI.Image>();
             track.transform.SetParent(bar,false);Stretch(track.rectTransform);
             track.sprite=MeterSprite("kit-loadTrack");track.type=UnityEngine.UI.Image.Type.Sliced;track.raycastTarget=false;
-            // Phần chưa đầy: chữ nâu xám, cắt từ mép phải của fill tới hết thanh.
-            meterRestMask=Rect(bar,"Rest (dark text)",0,0,0,0);Stretch(meterRestMask);
-            meterRestMask.gameObject.AddComponent<RectMask2D>();
-            MeterTexts(meterRestMask,size,new Vector2(1,0.5f),MeterDarkText,false,out meterPercentOff);
-            // Phần đã đầy: fill + chữ trắng, cắt từ mép trái tới k * chiều rộng.
-            meterFillMask=Rect(bar,"Fill (clipped)",0,0,0,0);Stretch(meterFillMask);
-            meterFillMask.gameObject.AddComponent<RectMask2D>();
-            meterFill=new GameObject("Fill",typeof(RectTransform)).AddComponent<UnityEngine.UI.Image>();
-            meterFill.transform.SetParent(meterFillMask,false);
-            AnchorFixed(meterFill.rectTransform,size,new Vector2(0,0.5f));
-            meterFill.sprite=MeterSprite("kit-loadFill");meterFill.type=UnityEngine.UI.Image.Type.Sliced;meterFill.raycastTarget=false;
-            MeterTexts(meterFillMask,size,new Vector2(0,0.5f),Color.white,true,out meterPercentOn);
+            meterFill=Rect(bar,"Fill geometry",0,0,size.x,size.y).gameObject.AddComponent<RugMeterFillGraphic>();
+            meterFill.raycastTarget=false;meterFill.maskable=false;
+            meterFill.SetFill(0,RugOriginalAssets.Texture("kit-loadFill"));
+            MeterTexts(bar,size,new Vector2(0.5f,0.5f),Color.white,true,out meterPercentOn);
         }
         // Khung chữ cỡ cố định bằng cả thanh, neo theo mép (trái cho fill, phải cho phần còn lại) để chữ không chạy theo mask.
         private RectTransform MeterTexts(RectTransform parent,Vector2 size,Vector2 edge,Color color,bool shadow,out Text percent)
@@ -1033,7 +1089,9 @@ namespace RugMaster
         {
             if(initialized)EventManager.RemoveListener<OnLevelLoadedEvent>(OnLevelLoaded);
             if(initialized)EventManager.RemoveListener<OnBoosterUnavailableEvent>(OnBoosterUnavailable);
+            if(initialized)RugGameFlow.Completed-=ShowWinPanel;
             if(shadeTexture!=null)Destroy(shadeTexture);
+            if(pileMaterial!=null)Destroy(pileMaterial);
             obstacleMarks?.Clear();
         }
         private static Rect ArrayRect(float[] r)=>new Rect(r[0],r[1],r[2],r[3]);

@@ -1,0 +1,112 @@
+{
+    "index": 5,
+    "cols": 22,
+    "rows": 18,
+    "unitsPerCell": 1,
+    "channelCapacity": 140,
+    "name": "Level_005",
+    "palette": [
+        "cream",
+        "coral",
+        "navy",
+        "mustard",
+        "sage",
+        "plum",
+        "teal",
+        "rose",
+        "rust",
+        "sky",
+        "charcoal",
+        "peach"
+    ],
+    "grid": [
+        "6666666666666666666666",
+        "6666666633333366666666",
+        "6666600005353000666666",
+        "6666330003335000336666",
+        "6666333005535003336666",
+        "6663333300550033333666",
+        "6660333330530333300666",
+        "6660000333003330000666",
+        "6660000555555552000666",
+        "6663335000555555233666",
+        "6663325299952595233666",
+        "6663325292952999233666",
+        "6666025999955555200666",
+        "6666023555352552206666",
+        "6666022222222222306666",
+        "6666633200332233366666",
+        "6666666603333066666666",
+        "6666666666666666666666"
+    ],
+    "hints": [
+        "Leave room for colours you need later."
+    ],
+    "baskets": [
+        {
+            "column": 0,
+            "capacity": 60,
+            "tied": -1,
+            "color": "teal",
+            "hidden": false
+        },
+        {
+            "column": 1,
+            "capacity": 38,
+            "tied": -1,
+            "color": "mustard",
+            "hidden": false
+        },
+        {
+            "column": 2,
+            "capacity": 57,
+            "tied": -1,
+            "color": "cream",
+            "hidden": false
+        },
+        {
+            "column": 0,
+            "capacity": 42,
+            "tied": -1,
+            "color": "plum",
+            "hidden": false
+        },
+        {
+            "column": 1,
+            "capacity": 31,
+            "tied": -1,
+            "color": "navy",
+            "hidden": false
+        },
+        {
+            "column": 2,
+            "capacity": 13,
+            "tied": -1,
+            "color": "sky",
+            "hidden": false
+        },
+        {
+            "column": 0,
+            "capacity": 59,
+            "tied": -1,
+            "color": "teal",
+            "hidden": false
+        },
+        {
+            "column": 1,
+            "capacity": 37,
+            "tied": -1,
+            "color": "mustard",
+            "hidden": false
+        },
+        {
+            "column": 2,
+            "capacity": 59,
+            "tied": -1,
+            "color": "teal",
+            "hidden": false
+        }
+    ],
+    "ribbons": [],
+    "clips": []
+}

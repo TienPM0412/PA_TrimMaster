@@ -19,7 +19,7 @@ namespace RugMaster
 
         private sealed class Puff
         {
-            public RawImage image;
+            public bool visible; public RugOriginalView.FlightSprite frame;
             public int k,variant;
             public float dist,rotation,spin,phase,twirl,dy,age,delay,duration,scale,outletX;
             public bool capturing,sweep,dead;
@@ -29,14 +29,14 @@ namespace RugMaster
 
         private readonly Dictionary<int,Group> groups=new Dictionary<int,Group>();
         private readonly List<int> removeIds=new List<int>();
-        private readonly Stack<RawImage> pool=new Stack<RawImage>();
-        private readonly RectTransform fibersRoot,dropsRoot,flyersRoot;
+        
+        private readonly RugFiberBatchGraphic fibersRoot,dropsRoot,flyersRoot;
         private readonly Func<string,int,RugOriginalView.FlightSprite> sprite;
         private RugSimulation simulation;
         private float lastTime;
         private static float Entry=>RugSimulation.TopDistance(RugFiberMotion.Intake.x);
 
-        public RugFiberTrail(RectTransform fibers,RectTransform drops,RectTransform flyers,Func<string,int,RugOriginalView.FlightSprite> spriteLookup)
+        public RugFiberTrail(RugFiberBatchGraphic fibers,RugFiberBatchGraphic drops,RugFiberBatchGraphic flyers,Func<string,int,RugOriginalView.FlightSprite> spriteLookup)
         {fibersRoot=fibers;dropsRoot=drops;flyersRoot=flyers;sprite=spriteLookup;}
 
         public void Clear()
@@ -68,7 +68,7 @@ namespace RugMaster
                     for(int k=1;k<=n;k++)
                     {
                         float seed=(f.Id*7.31f+k*3.17f)%1f;
-                        g.puffs.Add(new Puff{k=k,variant=(f.Variant+k*2)%6,phase=f.WanderPhase+k*1.9f,twirl=f.TwirlSpeed*(0.9f+0.2f*seed),
+                        g.puffs.Add(new Puff{k=k,variant=(f.Variant+k*2)%6,frame=sprite(f.Color,(f.Variant+k*2)%6),phase=f.WanderPhase+k*1.9f,twirl=f.TwirlSpeed*(0.9f+0.2f*seed),
                             dy=Mathf.Clamp(f.Dy+(seed-0.5f)*26,-14,14),rotation=f.Rotation+k*1.3f,spin=-f.Spin*(0.8f+0.4f*seed),dist=float.MinValue});
                     }
                 }
@@ -81,12 +81,12 @@ namespace RugMaster
                         p.dist=RugPipeFlow.DistanceAt(RugPipeFlow.Tau(f.Distance)-p.k*GapTau);
                         if(p.dist<Entry)continue;
                         Follow(p,time,dt);
-                        if(p.image==null)p.image=Acquire();
+                        p.visible=true;
                     }
                     else if(f.Phase==FiberPhase.Capture)
                     {
                         // Cục phụ chưa chui ra khỏi miệng hút thì bỏ luôn.
-                        if(p.image==null){p.dead=true;continue;}
+                        if(!p.visible){p.dead=true;continue;}
                         p.capturing=true;p.sweep=f.Sweep;p.age=0;p.duration=f.Duration;p.from=p.pos;p.outletX=f.CaptureFrom.x;
                         p.to=f.CaptureTo+new Vector2(((p.k*0.37f)%1f-0.5f)*50,0);
                         p.delay=f.Sweep?p.k*0.05f:p.k*GapTau/RugSimulation.Speed;
@@ -102,7 +102,7 @@ namespace RugMaster
                     if(!g.alive&&!p.capturing)p.dead=true;
                     if(p.dead){Release(p);continue;}
                     any=true;
-                    if(p.image!=null)Draw(p,g.color);
+                    if(p.visible)Draw(p,g.color);
                 }
                 if(!g.alive&&!any)removeIds.Add(pair.Key);
             }
@@ -146,28 +146,12 @@ namespace RugMaster
 
         private void Draw(Puff p,string color)
         {
-            var parent=!p.capturing||p.age<p.delay?fibersRoot:!p.sweep&&p.pos.y-18<=RugFiberMotion.LipBottom?dropsRoot:flyersRoot;
-            if(p.image.transform.parent!=parent)p.image.transform.SetParent(parent,false);
-            if(!p.image.gameObject.activeSelf)p.image.gameObject.SetActive(true);
-            var s=sprite(color,p.variant);
-            p.image.uvRect=s.uv;
-            var rect=p.image.rectTransform;
-            rect.anchoredPosition=new Vector2(p.pos.x,-p.pos.y);rect.sizeDelta=s.size*(p.scale/0.28f);
-            rect.localEulerAngles=new Vector3(0,0,-p.rotation*Mathf.Rad2Deg);
+            var batch=!p.capturing||p.age<p.delay?fibersRoot:!p.sweep&&p.pos.y-18<=RugFiberMotion.LipBottom?dropsRoot:flyersRoot;
+            var frame=p.frame;
+            batch.Add(p.pos,frame.size*(p.scale/0.28f),frame.uv,p.rotation);
         }
 
-        private RawImage Acquire()
-        {
-            if(pool.Count>0)return pool.Pop();
-            var image=RugOriginalView.Rect(fibersRoot,"Fiber trail puff",0,0,0,0).gameObject.AddComponent<RawImage>();
-            image.texture=RugOriginalAssets.Texture("flight-atlas");image.raycastTarget=false;
-            image.rectTransform.pivot=new Vector2(0.5f,0.5f);
-            return image;
-        }
-        private void Release(Puff p)
-        {
-            if(p.image==null)return;
-            p.image.gameObject.SetActive(false);pool.Push(p.image);p.image=null;
-        }
+        
+        private void Release(Puff p) { p.visible=false; }
     }
 }

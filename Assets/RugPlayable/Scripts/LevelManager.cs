@@ -8,7 +8,7 @@ namespace RugMaster
         public void LoadLevel(int level)
         {
             CurrentLevel = Mathf.Max(1, level);
-            var data = RugPlayableAssets.Current.level;
+            var data = RugPlayableAssets.Current.Level(CurrentLevel);
             Simulation = new RugSimulation(data);
             Simulation.OnTrim += cell => EventManager.Trigger(new OnTrimEvent { cell = cell });
             Simulation.OnFiberLanded += fiber => EventManager.Trigger(new OnFiberLandedEvent { fiber = fiber });
@@ -27,8 +27,9 @@ namespace RugMaster
             if (Simulation == null) return;
             var input = ControllerManager.Ins;
             input.UpdateLayout();
-            if (GameManager.Ins.IsModalPaused || (GameManager.Ins.View != null && GameManager.Ins.View.PresentationBlocksInput))
-            { input.CancelPointer(); return; }
+            bool blocked = GameManager.Ins.IsModalPaused || (GameManager.Ins.View != null && GameManager.Ins.View.PresentationBlocksInput);
+            if (SoundManager.HasInstance) SoundManager.Ins.Motor(input.IsDragging, input.IsCutting, !blocked);
+            if (blocked) { input.CancelPointer(); return; }
             input.HandlePointer();
             Simulation.Tick(Mathf.Min(Time.unscaledDeltaTime, 0.05f));
             input.AfterSimulationTick();

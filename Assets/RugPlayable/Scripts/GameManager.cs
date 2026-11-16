@@ -24,6 +24,9 @@ namespace RugMaster
             }
             Ensure<ControllerManager>();
             Ensure<BoosterManager>();
+            Ensure<SoundManager>().PlayMusic(SoundFX.MusicInGame);
+            // Level chọn trong PAManager (Luna Playground) thắng startLevel.
+            if (PAManager.HasInstance) startLevel = PAManager.Ins.SelectedLevel;
             Ensure<LevelManager>().LoadLevel(startLevel);
             View = Ensure<RugOriginalView>();
             View.Initialize();
