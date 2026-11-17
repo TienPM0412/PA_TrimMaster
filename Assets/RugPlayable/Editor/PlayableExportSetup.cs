@@ -21,6 +21,7 @@ public static class PlayableExportSetup
         ScanEntries(library);
         library.originalManifest = JsonUtility.FromJson<OriginalManifest>(Resources.Load<TextAsset>("RugMaster/OriginalUI/manifest").text);
         library.Bind();
+        RugOriginalAssets.ResetCache();
         for (int i = 1; i <= library.levels.Length; i++) BakePileImage(library.Level(i), i);
         int count = ScanEntries(library);
         library.originalManifest = JsonUtility.FromJson<OriginalManifest>(Resources.Load<TextAsset>("RugMaster/OriginalUI/manifest").text);
@@ -29,6 +30,7 @@ public static class PlayableExportSetup
         // JSON is parsed only by the editor. Playworks receives concrete serialized fields.
         foreach (var entry in library.entries) entry.json = null;
         library.Bind();
+        RugOriginalAssets.ResetCache();
         game.assets = library;
         if (game.GetComponent<ControllerManager>() == null) game.gameObject.AddComponent<ControllerManager>();
         if (game.GetComponent<BoosterManager>() == null) game.gameObject.AddComponent<BoosterManager>();

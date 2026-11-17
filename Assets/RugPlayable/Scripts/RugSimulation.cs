@@ -215,7 +215,7 @@ namespace RugMaster
         {
             get
             {
-                if(releases.Count>0)return true;
+                if(releases.Count>0||rearrangePending)return true;
                 for(int i=0;i<ColumnBusy.Length;i++)if(ColumnBusy[i]>0)return true;
                 for(int i=0;i<Fibers.Count;i++)if(Fibers[i].Phase!=FiberPhase.Channel)return true;
                 for(int i=0;i<Ribbons.Length;i++)if(Ribbons[i].Timer>=0&&!Ribbons[i].Resolved)return true;
@@ -412,6 +412,7 @@ namespace RugMaster
                     if (wasFront && next != null) next.Revealed = true;
                     releases.Add(new Release { Column = column, Remaining = 0.42f + revealDelay });
                 }
+            if (rearrangePending && !RearrangeBlocked()) { rearrangePending = false; ApplyRearrange(rearrangeForced); }
             if (TrimmedCount == Cells.Length) SpeedBoost = Mathf.Min(FinishBoost, SpeedBoost + FinishBoostRamp * dt);
             SpaceChannel();
             for (int i = Fibers.Count - 1; i >= 0; i--)
@@ -432,7 +433,8 @@ namespace RugMaster
                 else if(before==FiberPhase.Channel)
                 {
                     var position=LoopPosition(f.Distance);
-                    if(HoldCapture||Mathf.Repeat(f.Distance,LoopLength)>=BottomLength)continue;
+                    // Shuffle đang chờ đổi giỏ: bông chạy tiếp vòng ống, chưa rơi xuống giỏ.
+                    if(HoldCapture||rearrangePending||Mathf.Repeat(f.Distance,LoopLength)>=BottomLength)continue;
                     for (int c = 0; c < 3; c++)
                     {
                         if (!(previousX>OutletX[c]&&position.x<=OutletX[c])) continue;
@@ -577,50 +579,170 @@ namespace RugMaster
             return true;
         }
 
-        public bool Rearrange()
+        // Booster Shuffle (Rearrange): sau khi bấm, giỏ đầu 3 cột là các màu đang có nhiều bông nhất trong ống
+        // (ống trống: màu còn cắt được trên thảm). Giỏ đầu thuộc top màu thì giữ (đang ẩn thì lật ra), giỏ đầu khác
+        // đổi với giỏ mang màu top còn thiếu ở bất kỳ vị trí nào trong hàng (gần đầu trước) - kể cả giỏ đã có dở bông
+        // (mang theo số bông của nó) và giỏ ẩn (lộ màu khi lên đầu). Giỏ buộc ruy băng không bị kéo; giỏ đầu bị buộc
+        // đổi với giỏ cùng màu phía sau. Tối đa 3 giỏ mỗi lần (mỗi cột 1 giỏ).
+        // Đang có bông rơi vào giỏ / cột đang trượt giỏ mới: tạm ngưng thả bông xuống giỏ, chờ xong rồi mới đổi (RearrangePending).
+        private bool rearrangePending;
+        public bool RearrangePending => rearrangePending;
+        private readonly List<KeyValuePair<int, Basket>> rearrangeSwaps = new List<KeyValuePair<int, Basket>>();
+        private readonly List<Basket> rearrangeReveals = new List<Basket>();
+
+        /// <param name="force">Tutorial booster: kế hoạch thường không có gì để đổi thì vẫn đổi một giỏ (PlanForcedRearrange)
+        /// để người chơi thấy booster hoạt động.</param>
+        public bool Rearrange(bool force = false)
         {
             if (State == PlayState.Won) return false;
+            if (rearrangePending) { Notice = "Baskets rearranging"; return false; }
+            if (!Plan(force)) { Notice = "No useful rearrangement"; return false; }
+            State = PlayState.Playing; JamTimer = 0;
+            if (RearrangeBlocked()) { rearrangePending = true; rearrangeForced = force; Notice = "Baskets rearranging"; return true; }
+            ApplyRearrange(force);
+            return true;
+        }
+
+        private bool rearrangeForced;
+        private bool Plan(bool force) => PlanRearrange() || (force && PlanForcedRearrange());
+
+        // Giỏ đang nhận bông (bông đang rơi), đang hoàn thành, hoặc cột đang trượt giỏ mới lên.
+        private bool RearrangeBlocked()
+        {
+            for (int c = 0; c < 3; c++)
+            {
+                if (ColumnBusy[c] > 0) return true;
+                foreach (var b in Columns[c]) if (b.Reserved > 0 || b.Completing) return true;
+            }
+            return false;
+        }
+
+        private void ApplyRearrange(bool force)
+        {
+            if (Plan(force))
+            {
+                foreach (var pair in rearrangeSwaps)
+                {
+                    int k = pair.Key; var best = pair.Value;
+                    var f = Columns[k][0];
+                    int c = best.Column, p = Columns[c].IndexOf(best);
+                    Columns[k][0] = best; Columns[c][p] = f;
+                    f.Column = c; best.Column = k; best.Revealed = true;
+                }
+                foreach (var b in rearrangeReveals) b.Revealed = true;
+            }
+            Notice = "Baskets rearranged";
+        }
+
+        /// <summary>
+        /// Kế hoạch dự phòng cho tutorial (giỏ đầu đã đúng các màu cần nhất nên kế hoạch thường không đổi gì):
+        /// đổi một giỏ đầu ít cần nhất (màu không có / ít bông trong ống) với giỏ phía sau gần đầu nhất mang màu còn trên thảm
+        /// nhiều nhất (cho phép trùng màu với giỏ đầu khác) - vẫn có ích và người chơi thấy giỏ đổi chỗ.
+        /// </summary>
+        private bool PlanForcedRearrange()
+        {
+            rearrangeSwaps.Clear(); rearrangeReveals.Clear();
+            var pipe = new Dictionary<string, int>();
+            foreach (var f in Fibers.Where(f => f.Phase != FiberPhase.Capture))
+                pipe[f.Color] = (pipe.TryGetValue(f.Color, out int n) ? n : 0) + 1;
+            var rug = new Dictionary<string, int>();
+            foreach (var c in Cells.Where(c => !c.Trimmed && !Blocked(c)))
+                rug[c.Color] = (rug.TryGetValue(c.Color, out int n) ? n : 0) + 1;
+            int front = -1;
+            for (int k = 0; k < 3; k++)
+            {
+                var f = Front(k);
+                if (f == null || f.Completing || f.Tied >= 0) continue;
+                if (front < 0 || ForcedScore(pipe, rug, f.Color) < ForcedScore(pipe, rug, Front(front).Color)) front = k;
+            }
+            if (front < 0) return false;
+            var used = new HashSet<int>();
+            for (int k = 0; k < 3; k++) if (Front(k) != null) used.Add(Front(k).Id);
+            Basket best = null; int bestScore = int.MinValue, bestPosition = int.MaxValue;
+            for (int c = 0; c < 3; c++)
+                for (int p = 1; p < Columns[c].Count; p++)
+                {
+                    var b = Columns[c][p];
+                    if (b.Tied >= 0 || b.Completing || b.Available <= 0 || used.Contains(b.Id)) continue;
+                    int s = ForcedScore(pipe, rug, b.Color);
+                    if (s > bestScore || (s == bestScore && p < bestPosition)) { best = b; bestScore = s; bestPosition = p; }
+                }
+            if (best == null) return false;
+            rearrangeSwaps.Add(new KeyValuePair<int, Basket>(front, best));
+            return true;
+        }
+
+        // Điểm "cần" của một màu cho PlanForcedRearrange: bông trong ống nặng hơn hẳn số ô còn trên thảm.
+        private static int ForcedScore(Dictionary<string, int> pipe, Dictionary<string, int> rug, string color)
+        {
+            int p, r;
+            return (pipe.TryGetValue(color, out p) ? p * 1000 : 0) + (rug.TryGetValue(color, out r) ? r : 0);
+        }
+
+        /// <summary>Lập kế hoạch đổi giỏ vào rearrangeSwaps (cột, giỏ kéo lên đầu) / rearrangeReveals. False = không có gì để đổi.</summary>
+        private bool PlanRearrange()
+        {
+            rearrangeSwaps.Clear(); rearrangeReveals.Clear();
             var need = new Dictionary<string, int>();
             foreach (var f in Fibers.Where(f => f.Phase != FiberPhase.Capture))
                 need[f.Color] = (need.TryGetValue(f.Color, out int n) ? n : 0) + 1;
             if (need.Count == 0)
                 foreach (var c in Cells.Where(c => !c.Trimmed && !Blocked(c)))
                     need[c.Color] = (need.TryGetValue(c.Color, out int n) ? n : 0) + 1;
-            var fronts = new HashSet<string>(Enumerable.Range(0, 3).Select(EligibleFront).Where(b => b != null).Select(b => b.Color));
+            if (need.Count == 0) return false;
+            var ranking = need.OrderByDescending(p => p.Value).Select(p => p.Key).ToList();
             var used = new HashSet<int>();
-            bool changed = false;
-            for (int pass = 0; pass < 3; pass++)
-                for (int k = 0; k < 3; k++)
+            var covered = new HashSet<string>();
+            var open = new List<int>();
+            for (int k = 0; k < 3; k++)
+            {
+                var f = Front(k);
+                if (f == null || f.Completing) continue;
+                used.Add(f.Id);
+                if (f.Tied < 0) { open.Add(k); continue; }
+                // Giỏ đầu bị buộc: đổi với giỏ cùng màu không bị buộc phía sau (như trước).
+                var same = RearrangeCandidate(f.Color, used);
+                if (same == null) continue;
+                used.Add(same.Id); covered.Add(f.Color);
+                rearrangeSwaps.Add(new KeyValuePair<int, Basket>(k, same));
+            }
+            // Top màu theo số bông (OrderByDescending giữ thứ tự gặp trước khi bằng nhau).
+            var keep = new HashSet<int>();
+            var missing = new List<string>();
+            foreach (var color in ranking)
+            {
+                if (keep.Count + missing.Count >= open.Count) break;
+                if (covered.Contains(color)) continue;
+                int column = open.FindIndex(k => !keep.Contains(k) && Front(k).Color == color);
+                if (column >= 0) { keep.Add(open[column]); continue; }
+                if (RearrangeCandidate(color, used) != null) missing.Add(color);
+            }
+            foreach (int k in keep) if (!Front(k).Revealed) rearrangeReveals.Add(Front(k));
+            var free = open.Where(k => !keep.Contains(k)).ToList();
+            foreach (var color in missing)
+            {
+                var best = RearrangeCandidate(color, used);
+                if (best == null || free.Count == 0) continue;
+                // Ưu tiên đổi trong cùng cột của giỏ được kéo lên.
+                int k = free.Contains(best.Column) ? best.Column : free[0];
+                free.Remove(k); used.Add(best.Id);
+                rearrangeSwaps.Add(new KeyValuePair<int, Basket>(k, best));
+            }
+            return rearrangeSwaps.Count > 0 || rearrangeReveals.Count > 0;
+        }
+
+        // Giỏ phía sau (không phải giỏ đầu) mang màu color còn chỗ, không bị buộc / đang hoàn thành; gần đầu hàng trước.
+        private Basket RearrangeCandidate(string color, HashSet<int> used)
+        {
+            Basket best = null; int bestPosition = int.MaxValue;
+            for (int c = 0; c < 3; c++)
+                for (int p = 1; p < Columns[c].Count && p < bestPosition; p++)
                 {
-                    var f = Front(k);
-                    if (f == null || used.Contains(f.Id) || ColumnBusy[k] > 0 || f.Collected != 0 || f.Reserved != 0 || f.Completing) continue;
-                    if (pass == 0 && f.Tied < 0) continue;
-                    if (pass == 1)
-                    {
-                        if (f.Tied >= 0 || f.Revealed || !need.ContainsKey(f.Color) || fronts.Contains(f.Color)) continue;
-                        f.Revealed = true; used.Add(f.Id); fronts.Add(f.Color); changed = true; continue;
-                    }
-                    if (pass == 2 && (f.Tied >= 0 || (f.Revealed && need.ContainsKey(f.Color)))) continue;
-                    Basket best = null; int bestColumn = -1, bestPosition = -1, weight = -1;
-                    for (int c = 0; c < 3; c++)
-                        for (int p = 1; p < Columns[c].Count; p++)
-                        {
-                            var b = Columns[c][p];
-                            if (b.Tied >= 0 || b.Completing || b.Collected != 0 || b.Reserved != 0 || used.Contains(b.Id)) continue;
-                            if (pass == 0 && b.Color != f.Color) continue;
-                            if (pass == 2 && (!need.ContainsKey(b.Color) || fronts.Contains(b.Color))) continue;
-                            int w = pass == 0 ? 10000 - c * 100 - p : need[b.Color] * 100 - p;
-                            if (w <= weight) continue;
-                            weight = w; best = b; bestColumn = c; bestPosition = p;
-                        }
-                    if (best == null) continue;
-                    Columns[k][0] = best; Columns[bestColumn][bestPosition] = f;
-                    f.Column = bestColumn; best.Column = k; best.Revealed = true;
-                    used.Add(f.Id); used.Add(best.Id); fronts.Add(best.Color); changed = true;
+                    var b = Columns[c][p];
+                    if (b.Color != color || b.Tied >= 0 || b.Completing || b.Available <= 0 || used.Contains(b.Id)) continue;
+                    best = b; bestPosition = p;
                 }
-            if (!changed) { Notice = "No useful rearrangement"; return false; }
-            State = PlayState.Playing; JamTimer = 0; Notice = "Baskets rearranged";
-            return true;
+            return best;
         }
 
         public bool Revive()

@@ -2,7 +2,7 @@
     "version": "7.2.0",
     "projectId": "6e8e5534463322349afcaac8303a6f64",
     "applicationID": 44358,
-    "creativeName": "PA_lv1_lv2",
+    "creativeName": "PA_lv2",
     "pgServer": "EU",
     "window": {
         "‐⁘": true
@@ -76,12 +76,12 @@
                 "Stubs/SupersonicWisdom/"
             ],
             "msbuildMac64": "/Library/Frameworks/Mono.framework/Versions/Current/bin/msbuild",
-            "msbuildWin64": "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+            "msbuildWin64": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
             "externalSources": [],
             "externalJSLibraries": [],
             "scriptingDefines": [],
-            "msbuildVersion": "18.11",
-            "monoVersion": "10.0.9",
+            "msbuildVersion": "17.13",
+            "monoVersion": "9.0.3",
             "dotnetVersion": ""
         },
         "assets": {
@@ -11890,11 +11890,11 @@
                     },
                     {
                         "name": "$ctor1",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "$ctor2",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "System$Collections$Generic$ICollection$1$add",
@@ -11946,7 +11946,7 @@
                     },
                     {
                         "name": "unionWith",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "intersectWith",
@@ -25274,7 +25274,7 @@
                     },
                     {
                         "name": "ShowToast",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "UpdateToast",
@@ -25678,7 +25678,7 @@
                     },
                     {
                         "name": "Rearrange",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "Revive",
@@ -27345,6 +27345,14 @@
                     {
                         "name": "DeriveLayout",
                         "excluded": true
+                    },
+                    {
+                        "name": "ResetCache",
+                        "excluded": true
+                    },
+                    {
+                        "name": "AtlasUV",
+                        "excluded": false
                     }
                 ]
             },
@@ -27548,7 +27556,7 @@
                     },
                     {
                         "name": "ctor",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "getHashCode",
@@ -27560,7 +27568,7 @@
                     },
                     {
                         "name": "$clone",
-                        "excluded": true
+                        "excluded": false
                     }
                 ]
             },
@@ -32360,6 +32368,16 @@
                         "script": "",
                         "ext": "",
                         "name": "Assets/RugPlayable/Resources/RugMaster/OriginalUI/channel-back.png"
+                    },
+                    {
+                        "maxWidth": 1024,
+                        "maxHeight": 1024,
+                        "format": "png32",
+                        "compression": "quantSize",
+                        "quality": 65,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/PA/title 2.png"
                     }
                 ]
             },

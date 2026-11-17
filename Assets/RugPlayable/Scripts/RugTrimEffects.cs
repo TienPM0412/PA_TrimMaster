@@ -84,8 +84,7 @@ namespace RugMaster
         private Rect AtlasUv(string frame)
         {
             if(atlasUv.TryGetValue(frame,out var uv))return uv;
-            var r=RugOriginalAssets.Frame(frame).rect;
-            uv=new Rect(r[0]/4096,1-(r[1]+r[3])/4096,r[2]/4096,r[3]/4096);
+            uv=RugOriginalAssets.AtlasUV(RugOriginalAssets.Frame(frame));
             atlasUv[frame]=uv;return uv;
         }
 

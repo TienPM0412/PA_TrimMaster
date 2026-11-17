@@ -810,8 +810,8 @@ namespace RugMaster
         {
             if(!flightSprites.TryGetValue((color,variant),out var sprite))
             {
-                var r=RugOriginalAssets.FlightFrame("fly-"+color+"-"+variant).rect;
-                sprite=new FlightSprite{uv=new Rect(r[0]/2048,1-(r[1]+r[3])/2048,r[2]/2048,r[3]/2048),size=new Vector2(r[2],r[3])};
+                var f=RugOriginalAssets.FlightFrame("fly-"+color+"-"+variant);var r=f.rect;
+                sprite=new FlightSprite{uv=RugOriginalAssets.AtlasUV(f,true),size=new Vector2(r[2],r[3])};
                 flightSprites.Add((color,variant),sprite);
             }
             return sprite;

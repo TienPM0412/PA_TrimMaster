@@ -124,8 +124,8 @@ namespace RugMaster
             if(!clip || (Inside(points[0],points[1])&&Inside(points[2],points[3])&&
                 Inside(points[4],points[5])&&Inside(points[6],points[7])))
             {
-                int start=vh.currentVertCount;var r=frame.rect;
-                float l=r[0]/4096f,rr=(r[0]+r[2])/4096f,t=1-r[1]/4096f,b=1-(r[1]+r[3])/4096f;
+                int start=vh.currentVertCount;var uv=RugOriginalAssets.AtlasUV(frame);
+                float l=uv.xMin,rr=uv.xMax,t=uv.yMax,b=uv.yMin;
                 vh.AddVert(new Vector3(points[0],-points[1]),color,new Vector2(l,t));
                 vh.AddVert(new Vector3(points[2],-points[3]),color,new Vector2(rr,t));
                 vh.AddVert(new Vector3(points[4],-points[5]),color,new Vector2(rr,b));
@@ -144,8 +144,8 @@ namespace RugMaster
         }
         private static List<ClipVertex> Polygon(float[] points,OriginalSprite frame,bool clip)
         {
-            var r=frame.rect;
-            float l=r[0]/4096f, rr=(r[0]+r[2])/4096f, t=1-r[1]/4096f, b=1-(r[1]+r[3])/4096f;
+            var uv=RugOriginalAssets.AtlasUV(frame);
+            float l=uv.xMin, rr=uv.xMax, t=uv.yMax, b=uv.yMin;
             var polygon=clipInput;var output=clipOutput;
             polygon.Clear();output.Clear();
             polygon.Add(new ClipVertex(new Vector2(points[0],points[1]),new Vector2(l,t)));

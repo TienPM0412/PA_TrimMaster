@@ -10,6 +10,9 @@ namespace RugMaster
         public string name, kind;
         public int width, height, level, index, count;
         public float[] rect,cut;
+        // Frame trong atlas (fiber/flight): rect = toạ độ atlas gốc (4096/2048) - quyết định cỡ hiển thị;
+        // src = vị trí của chính frame đó trong ảnh atlas hiện tại (art mới đóng gói lại/thu nhỏ). Không có src thì dùng rect.
+        public float[] src;
     }
     [Serializable] public sealed class OriginalPiece { public int variant; public float[] vertices; }
     [Serializable] public sealed class OriginalCell { public float[] origin,shadow; public OriginalPiece[] pieces; }
@@ -21,6 +24,7 @@ namespace RugMaster
         public OriginalSprite[] sprites, atlas, flightAtlas;
         public OriginalToolHead[] toolHeads;
         public OriginalLayout[] layouts;
+        public float[] atlasSize, flightAtlasSize;
     }
     [Serializable] public sealed class OriginalHit {public float[] rect;}
     [Serializable] public sealed class OriginalJam {public float[] play,retry;}
@@ -53,8 +57,24 @@ namespace RugMaster
                 return manifest;
             }
         }
+        /// <summary>Xoá cache static (manifest/dom/texture). Editor không reload domain khi thoát Play mode nên cache cũ
+        /// có thể còn sót; bake phải gọi hàm này sau khi gán manifest mới, nếu không sẽ tính UV theo manifest cũ.</summary>
+        public static void ResetCache()
+        {
+            manifest = null; records = null; frames = null; flightFrames = null; dom = null;
+            textures.Clear();
+        }
         public static OriginalSprite Record(string key) { _ = Manifest; return records.TryGetValue(key,out var r) ? r : null; }
         public static OriginalSprite Frame(string key) { _ = Manifest; return frames[key]; }
+        /// <summary>UV (gốc dưới-trái như RawImage.uvRect) của frame trong fiber-atlas / flight-atlas. Chia theo cỡ ảnh nguồn
+        /// ghi trong manifest (atlasSize/flightAtlasSize), không theo texture.width vì import có thể thu nhỏ ảnh.</summary>
+        public static Rect AtlasUV(OriginalSprite frame,bool flight=false)
+        {
+            var size=flight?Manifest.flightAtlasSize:Manifest.atlasSize;
+            float w=size!=null&&size.Length==2?size[0]:flight?2048:4096,h=size!=null&&size.Length==2?size[1]:flight?2048:4096;
+            var r=frame.src!=null&&frame.src.Length==4?frame.src:frame.rect;
+            return new Rect(r[0]/w,1-(r[1]+r[3])/h,r[2]/w,r[3]/h);
+        }
         public static OriginalSprite FlightFrame(string key)
         {
             if(flightFrames==null)flightFrames=Manifest.flightAtlas.ToDictionary(f=>f.name);
