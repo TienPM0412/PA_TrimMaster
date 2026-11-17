@@ -11,6 +11,8 @@ namespace RugMaster
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class RugPileGraphic : MaskableGraphic
     {
+        // Thời gian ô vừa cạo còn hiện (RugPilePose: thu nhỏ + mờ hết sau 0.05 + 0.12s).
+        private const float TrimFadeSeconds = 0.17f;
         public int previewLevel = 1;
         public bool shadows;
         public bool drawUncut = true;
@@ -72,6 +74,9 @@ namespace RugMaster
             foreach (var cell in simulation.Cells)
             {
                 if(!drawUncut&&!cell.Trimmed)continue;
+                // Ô đã cạo xong hiệu ứng thu nhỏ/mờ (alpha = 0 sau 0.17s, bóng sau 0.15s): bỏ qua luôn, khỏi tính pose.
+                // Không có dòng này thì mỗi frame lúc đang cạo phải duyệt + tính pose cho mọi ô đã cạo (cả nghìn ô về cuối màn).
+                if(cell.Trimmed&&simulation.Elapsed-cell.TrimmedAt>=TrimFadeSeconds)continue;
                 var pose=RugPilePose.Evaluate(cell,simulation.Elapsed);
                 if(cell.Trimmed&&(shadows?pose.shadowAlpha:pose.alpha)<=0)continue;
                 RenderedCellCount++;

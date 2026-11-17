@@ -35,6 +35,8 @@ namespace RugMaster
         private float Random(float a,float b)=>a+(float)random.NextDouble()*(b-a);
 
         private static ControllerManager Input=>ControllerManager.Ins;
+        // SFX màn diễn như game gốc: roll_up lúc thảm cuộn lăn ra (intro), ribbon lúc thảm loé sáng (thắng).
+        private void Sfx(string clip){if(!ManualClock&&SoundManager.HasInstance)SoundManager.Ins.PlaySFX(clip,SoundManager.SFXType.Important);}
         public void Initialize(RugOriginalView owner,RugTrimEffects particles)
         {
             view=owner;effects=particles;EnsureHierarchy();Bind(LevelManager.Ins.Simulation,true);
@@ -122,6 +124,7 @@ namespace RugMaster
         {
             previousClock=clock;clock+=dt;totalTime+=dt;
             effects.ExternalTime=totalTime;
+            if(stage==Stage.Intro&&previousClock<=0&&clock>0)Sfx(SoundFX.RollUp);
             if(stage==Stage.Intro)
             {
                 if(clock<0.55f&&clock-lastDust>=0.06f)
@@ -134,7 +137,7 @@ namespace RugMaster
             }
             if(stage==Stage.Finishing)
             {
-                if(clock>=0.8f&&!celebration){celebration=true;Celebrate();}
+                if(clock>=0.8f&&!celebration){celebration=true;Sfx(SoundFX.Ribbon);Celebrate();}
                 if(clock>=2.1f&&!secondCurl){secondCurl=true;Curl(18,new Vector2(540,116+184),Mathf.PI/2,1.2f,new Vector2(60,200),380,1.8f,new Vector2(2.2f,3),new Vector2(60,86),960,110);}
                 if(clock>=2.75f&&!ManualClock&&!winHandled){winHandled=true;RugGameFlow.OnWinPresentationFinished();}
             }

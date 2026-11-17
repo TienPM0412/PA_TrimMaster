@@ -12,6 +12,7 @@ namespace RugMaster
             Simulation = new RugSimulation(data);
             Simulation.OnTrim += cell => EventManager.Trigger(new OnTrimEvent { cell = cell });
             Simulation.OnFiberLanded += fiber => EventManager.Trigger(new OnFiberLandedEvent { fiber = fiber });
+            Simulation.OnFiberEnterChannel += fiber => EventManager.Trigger(new OnFiberEnterChannelEvent { fiber = fiber });
             Simulation.OnBasketCompleted += basket => EventManager.Trigger(new OnBasketCompletedEvent { basket = basket });
             Simulation.OnWon += () => EventManager.Trigger(new OnLevelWonEvent { level = CurrentLevel });
             Simulation.OnJammed += () => EventManager.Trigger(new OnLevelJammedEvent { level = CurrentLevel });
@@ -27,6 +28,7 @@ namespace RugMaster
             if (Simulation == null) return;
             var input = ControllerManager.Ins;
             input.UpdateLayout();
+            input.PollPointer();
             bool blocked = GameManager.Ins.IsModalPaused || (GameManager.Ins.View != null && GameManager.Ins.View.PresentationBlocksInput);
             if (SoundManager.HasInstance) SoundManager.Ins.Motor(input.IsDragging, input.IsCutting, !blocked);
             if (blocked) { input.CancelPointer(); return; }

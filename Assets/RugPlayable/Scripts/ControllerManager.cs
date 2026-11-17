@@ -13,6 +13,8 @@ namespace RugMaster
         private bool dragging, heldWasFull, toolPlaced;
         private float scale = 1, offsetX, offsetY, placing, toolAngle, lastCutAt = -100;
         private Vector2 blade, previous, visualBlade, placeFrom;
+        private Vector2 pointerScreen;
+        private bool pointerHeld, pointerDown, wasHeld;
 
         public int HeadWidth => head;
         public bool IsDragging => dragging;
@@ -54,14 +56,35 @@ namespace RugMaster
 
         public void HandleShortcuts() {}
 
-        public void HandlePointer()
+        /// <summary>
+        /// Đọc trạng thái chạm/chuột mỗi frame (kể cả lúc input bị chặn) và tự bắt cạnh "vừa nhấn".
+        /// Không dùng TouchPhase.Began / GetMouseButtonDown: trên Luna (web) touchmove đến cùng frame với touchstart
+        /// ghi đè phase Began thành Moved, nên Began thường bị mất -> không bao giờ cầm được dao.
+        /// </summary>
+        public void PollPointer()
         {
             bool touch = Input.touchCount > 0;
-            var screen = touch ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
+            if (touch)
+            {
+                var t = Input.GetTouch(0);
+                pointerScreen = t.position;
+                pointerHeld = t.phase != TouchPhase.Ended && t.phase != TouchPhase.Canceled;
+            }
+            else
+            {
+                pointerScreen = Input.mousePosition;
+                pointerHeld = Input.GetMouseButton(0);
+            }
+            pointerDown = pointerHeld && !wasHeld;
+            wasHeld = pointerHeld;
+        }
+
+        public void HandlePointer()
+        {
+            var screen = pointerScreen;
             // Đổi sang toạ độ thảm (RugFit): dao, vùng chạm và nét cắt đều tính trong toạ độ thảm gốc.
             Vector2 raw = RugFit.ToRug(new Vector2((screen.x - offsetX) / scale, (Screen.height - screen.y - offsetY) / scale));
-            bool down = touch ? Input.GetTouch(0).phase == TouchPhase.Began : Input.GetMouseButtonDown(0);
-            bool held = touch ? Input.GetTouch(0).phase != TouchPhase.Ended && Input.GetTouch(0).phase != TouchPhase.Canceled : Input.GetMouseButton(0);
+            bool down = pointerDown, held = pointerHeld;
             if (down) BeginTrimAt(raw);
             if (!dragging) return;
             if (!held || Simulation.State != PlayState.Playing) { CancelPointer(); return; }

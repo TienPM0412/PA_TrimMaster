@@ -24,7 +24,9 @@ namespace RugMaster
             }
             Ensure<ControllerManager>();
             Ensure<BoosterManager>();
-            Ensure<SoundManager>().PlayMusic(SoundFX.MusicInGame);
+            // Âm thanh lỗi (API web không hỗ trợ...) không được chặn việc load level / input.
+            try { Ensure<SoundManager>().PlayMusic(SoundFX.MusicInGame); }
+            catch (System.Exception e) { Debug.LogError("[Sound] " + e); }
             // Level chọn trong PAManager (Luna Playground) thắng startLevel.
             if (PAManager.HasInstance) startLevel = PAManager.Ins.SelectedLevel;
             Ensure<LevelManager>().LoadLevel(startLevel);

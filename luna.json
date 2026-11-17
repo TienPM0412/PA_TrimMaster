@@ -1,8 +1,8 @@
 {
     "version": "7.2.0",
     "projectId": "6e8e5534463322349afcaac8303a6f64",
-    "applicationID": 40462,
-    "creativeName": "",
+    "applicationID": 44358,
+    "creativeName": "PA_lv1_lv2",
     "pgServer": "EU",
     "window": {
         "‐⁘": true
@@ -8291,20 +8291,16 @@
                 "excluded": false
             },
             {
-                "name": "RugMaster.RugTrimEffects.Sheen",
-                "excluded": false
-            },
-            {
-                "name": "PlayableAdHelper",
-                "excluded": true
-            },
-            {
                 "name": "RugMaster.PALevel",
                 "excluded": false
             },
             {
                 "name": "RugMaster.SoundManager.SFXType",
-                "excluded": true
+                "excluded": false
+            },
+            {
+                "name": "RugMaster.RugLeftoverHint.Marker",
+                "excluded": false
             }
         ],
         "unusedMethods": [
@@ -8740,7 +8736,7 @@
                     },
                     {
                         "name": "getDefaultValue",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "createInstance",
@@ -8846,7 +8842,7 @@
                     },
                     {
                         "name": "clipu8",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "clip16",
@@ -10816,7 +10812,7 @@
                     },
                     {
                         "name": "ctor",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "moveNext",
@@ -10840,7 +10836,7 @@
                     },
                     {
                         "name": "$clone",
-                        "excluded": true
+                        "excluded": false
                     }
                 ]
             },
@@ -15244,7 +15240,7 @@
                     },
                     {
                         "name": "getDefaultValue",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "bottom#get",
@@ -19132,7 +19128,7 @@
                     },
                     {
                         "name": "alphaHitTestMinimumThreshold#get",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "alphaHitTestMinimumThreshold#set",
@@ -19188,7 +19184,7 @@
                     },
                     {
                         "name": "IsRaycastLocationValid",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "MapCoordinate",
@@ -21676,11 +21672,11 @@
                     },
                     {
                         "name": "UseBooster",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "Count",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "AddBooster",
@@ -21810,6 +21806,10 @@
                     },
                     {
                         "name": "Cut",
+                        "excluded": false
+                    },
+                    {
+                        "name": "PollPointer",
                         "excluded": false
                     }
                 ]
@@ -23942,7 +23942,7 @@
                     },
                     {
                         "name": "interactable#set",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "blocksRaycasts#get",
@@ -23950,7 +23950,7 @@
                     },
                     {
                         "name": "blocksRaycasts#set",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "ignoreParentGroups#get",
@@ -24464,7 +24464,7 @@
                     },
                     {
                         "name": "rootRaycaster#get",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "ConfigureForEntity",
@@ -25202,7 +25202,7 @@
                     },
                     {
                         "name": "TutorialBlocksInput#get",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "GameplayBaseIndex#get",
@@ -25246,7 +25246,7 @@
                     },
                     {
                         "name": "PressBooster",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "OnBoosterUnavailable",
@@ -25418,11 +25418,19 @@
                     },
                     {
                         "name": "ShowWinPanel",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "EnsureWinPanel",
-                        "excluded": true
+                        "excluded": false
+                    },
+                    {
+                        "name": "MeterStencil",
+                        "excluded": false
+                    },
+                    {
+                        "name": "SetSeal",
+                        "excluded": false
                     }
                 ]
             },
@@ -25662,11 +25670,11 @@
                     },
                     {
                         "name": "PlanSweep",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "Sweep",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "Rearrange",
@@ -25679,6 +25687,10 @@
                     {
                         "name": "ValidateEconomy",
                         "excluded": false
+                    },
+                    {
+                        "name": "ChannelSpeed#get",
+                        "excluded": true
                     }
                 ]
             },
@@ -26289,6 +26301,10 @@
                     {
                         "name": "RevealClip",
                         "excluded": false
+                    },
+                    {
+                        "name": "Sfx",
+                        "excluded": false
                     }
                 ]
             },
@@ -26306,10 +26322,6 @@
                 "className": "RugMaster.RugTrimEffects",
                 "staticMethods": [],
                 "instanceMethods": [
-                    {
-                        "name": "Present",
-                        "excluded": false
-                    },
                     {
                         "name": "init",
                         "excluded": false
@@ -26363,7 +26375,19 @@
                         "excluded": true
                     },
                     {
-                        "name": "Image",
+                        "name": "Draw",
+                        "excluded": false
+                    },
+                    {
+                        "name": "Batch",
+                        "excluded": false
+                    },
+                    {
+                        "name": "SheenBatch",
+                        "excluded": false
+                    },
+                    {
+                        "name": "AtlasUv",
                         "excluded": false
                     }
                 ]
@@ -27852,7 +27876,7 @@
                     },
                     {
                         "name": "Volume",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "Awake",
@@ -27888,15 +27912,15 @@
                     },
                     {
                         "name": "PlayPlace",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "Motor",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "PlayButton",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "PlayMusic",
@@ -27908,11 +27932,7 @@
                     },
                     {
                         "name": "PlaySFX",
-                        "excluded": true
-                    },
-                    {
-                        "name": "OneShot",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "Clip",
@@ -27920,6 +27940,30 @@
                     },
                     {
                         "name": "Source",
+                        "excluded": false
+                    },
+                    {
+                        "name": "OnLevelLoaded",
+                        "excluded": true
+                    },
+                    {
+                        "name": "OnFiberEnterChannel",
+                        "excluded": true
+                    },
+                    {
+                        "name": "Update",
+                        "excluded": true
+                    },
+                    {
+                        "name": "PlaySFXOnce",
+                        "excluded": true
+                    },
+                    {
+                        "name": "PickSource",
+                        "excluded": false
+                    },
+                    {
+                        "name": "UpdateMusicDuck",
                         "excluded": true
                     }
                 ]
@@ -28104,7 +28148,7 @@
                 "instanceMethods": [
                     {
                         "name": "init",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "attachedRigidbody#get",
@@ -32038,11 +32082,11 @@
                     },
                     {
                         "name": "Show",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "Hide",
-                        "excluded": true
+                        "excluded": false
                     },
                     {
                         "name": "OnInstallClicked",
@@ -32093,6 +32137,182 @@
                         "excluded": true
                     }
                 ]
+            },
+            {
+                "className": "RugMaster.RugLeftoverHint",
+                "staticMethods": [],
+                "instanceMethods": [
+                    {
+                        "name": "init",
+                        "excluded": false
+                    },
+                    {
+                        "name": "Layer",
+                        "excluded": false
+                    },
+                    {
+                        "name": "GlowTexture",
+                        "excluded": false
+                    },
+                    {
+                        "name": "RingTexture",
+                        "excluded": false
+                    },
+                    {
+                        "name": "Radial",
+                        "excluded": false
+                    },
+                    {
+                        "name": "ctor",
+                        "excluded": false
+                    },
+                    {
+                        "name": "Update",
+                        "excluded": false
+                    },
+                    {
+                        "name": "CollectTargets",
+                        "excluded": false
+                    },
+                    {
+                        "name": "Show",
+                        "excluded": false
+                    },
+                    {
+                        "name": "Hide",
+                        "excluded": false
+                    },
+                    {
+                        "name": "Animate",
+                        "excluded": false
+                    },
+                    {
+                        "name": "MarkerAt",
+                        "excluded": false
+                    }
+                ]
+            },
+            {
+                "className": "OnFiberEnterChannelEvent",
+                "staticMethods": [],
+                "instanceMethods": [
+                    {
+                        "name": "getDefaultValue",
+                        "excluded": true
+                    },
+                    {
+                        "name": "ctor",
+                        "excluded": false
+                    },
+                    {
+                        "name": "getHashCode",
+                        "excluded": true
+                    },
+                    {
+                        "name": "equals",
+                        "excluded": true
+                    },
+                    {
+                        "name": "$clone",
+                        "excluded": false
+                    }
+                ]
+            },
+            {
+                "className": "PlayableAdHelper",
+                "staticMethods": [],
+                "instanceMethods": [
+                    {
+                        "name": "InstallFullGame",
+                        "excluded": false
+                    },
+                    {
+                        "name": "GameEnded",
+                        "excluded": false
+                    }
+                ]
+            },
+            {
+                "className": "RugMaster.RugQuadBatchGraphic",
+                "staticMethods": [],
+                "instanceMethods": [
+                    {
+                        "name": "Corner",
+                        "excluded": false
+                    },
+                    {
+                        "name": "QuadCount#get",
+                        "excluded": true
+                    },
+                    {
+                        "name": "mainTexture#get",
+                        "excluded": false
+                    },
+                    {
+                        "name": "init",
+                        "excluded": false
+                    },
+                    {
+                        "name": "BeginFrame",
+                        "excluded": false
+                    },
+                    {
+                        "name": "Add",
+                        "excluded": false
+                    },
+                    {
+                        "name": "EndFrame",
+                        "excluded": false
+                    },
+                    {
+                        "name": "Clear",
+                        "excluded": true
+                    },
+                    {
+                        "name": "OnPopulateMesh",
+                        "excluded": false
+                    }
+                ]
+            },
+            {
+                "className": "RugMaster.RugQuadBatchGraphic.Quad",
+                "staticMethods": [],
+                "instanceMethods": [
+                    {
+                        "name": "getDefaultValue",
+                        "excluded": false
+                    },
+                    {
+                        "name": "init",
+                        "excluded": false
+                    },
+                    {
+                        "name": "ctor",
+                        "excluded": false
+                    },
+                    {
+                        "name": "getHashCode",
+                        "excluded": true
+                    },
+                    {
+                        "name": "equals",
+                        "excluded": true
+                    },
+                    {
+                        "name": "$clone",
+                        "excluded": false
+                    }
+                ]
+            },
+            {
+                "className": "RugMaster.RugTrimEffects.Sheen",
+                "staticMethods": [],
+                "instanceMethods": [
+                    {
+                        "name": "init",
+                        "excluded": false
+                    }
+                ]
             }
         ],
         "stubberDataList": [],
@@ -32130,6 +32350,16 @@
                         "script": "",
                         "ext": "",
                         "name": "Resources/unity_builtin_extra/Default-Particle"
+                    },
+                    {
+                        "maxWidth": 1024,
+                        "maxHeight": 1024,
+                        "format": "png32",
+                        "compression": "quantSize",
+                        "quality": 65,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/OriginalUI/channel-back.png"
                     }
                 ]
             },
@@ -32149,7 +32379,7 @@
                         "startTime": "00:00.000",
                         "endTime": "00:30.000",
                         "lengthInSeconds": 30.0,
-                        "bitrate": 128,
+                        "bitrate": 8,
                         "script": "",
                         "ext": "",
                         "name": "Assets/RugPlayable/Resources/RugMaster/Audio/Music/BGM_INGAME.ogg"
@@ -32163,6 +32393,146 @@
                         "script": "",
                         "ext": "",
                         "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/win.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/pack_combo6.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/pack_combo4.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/pack_combo0.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:00.000",
+                        "lengthInSeconds": 0.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/pack_combo3.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/pack_combo5.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/pack_combo2.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/pack_combo1.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/roll_up.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 8,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/pop.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/shear.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/land.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 8,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/tap_button.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/place.ogg"
+                    },
+                    {
+                        "channels": 1,
+                        "startTime": "00:00.000",
+                        "endTime": "00:30.000",
+                        "lengthInSeconds": 30.0,
+                        "bitrate": 64,
+                        "script": "",
+                        "ext": "",
+                        "name": "Assets/RugPlayable/Resources/RugMaster/Audio/SFX/trim_place.wav"
                     }
                 ]
             },

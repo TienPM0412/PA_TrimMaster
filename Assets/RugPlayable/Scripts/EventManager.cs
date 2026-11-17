@@ -94,6 +94,9 @@ public struct OnTrimEvent : IGameEvent { public Cell cell; }
 /// <summary>Một sợi len vừa rơi vào giỏ.</summary>
 public struct OnFiberLandedEvent : IGameEvent { public Fiber fiber; }
 
+// Cục bông bay từ thảm vào tới ống (Flight -> Channel): tiếng "land" của game gốc.
+public struct OnFiberEnterChannelEvent : IGameEvent { public Fiber fiber; }
+
 /// <summary>Một giỏ vừa đầy và bắt đầu đóng gói.</summary>
 public struct OnBasketCompletedEvent : IGameEvent { public Basket basket; }
 

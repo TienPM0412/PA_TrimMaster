@@ -52,6 +52,7 @@ namespace RugMaster
         private readonly HashSet<int> liveBasketIds=new HashSet<int>();
         private readonly Dictionary<int,BasketVisual> basketViews=new Dictionary<int,BasketVisual>();
         private RugObstacleMarks obstacleMarks;
+        private RugLeftoverHint leftoverHint;
         private readonly List<FiberVisual> fiberViews=new List<FiberVisual>();
         private readonly Dictionary<(string,int),FlightSprite> flightSprites=new Dictionary<(string,int),FlightSprite>();
         public sealed class FlightSprite {public Rect uv;public Vector2 size;}
@@ -637,6 +638,10 @@ namespace RugMaster
                     int index=sweep?1:0;
                     
                 }
+                // Còn 1-2 cục len khó nhìn mà mấy giây chưa cắt được: vòng sáng chỉ vào chỗ đó (như game gốc).
+                bool free=!PresentationBlocksInput&&!TutorialBlocksInput&&!GameManager.Ins.IsModalPaused;
+                if(leftoverHint==null)leftoverHint=new RugLeftoverHint(marksRoot);
+                leftoverHint.Update(simulation,free);
             }
             RefreshBaskets();RefreshMarks();RefreshFibers();
         }
@@ -723,7 +728,7 @@ namespace RugMaster
                     }
                     v.bow.gameObject.SetActive(b.Tied>=0);
                     v.seal.gameObject.SetActive(b.Completing);
-                    if(b.Completing)SetKit(v.seal,"seal",new Vector2(0,front?-100:-55),0.65f);
+                    if(b.Completing)SetSeal(v.seal,front);
                     v.position=p;v.count=b.Remaining;v.revealed=b.Revealed;v.tied=b.Tied;
                     v.completing=b.Completing;v.lastInQueue=lastInQueue;
                     }
@@ -919,6 +924,18 @@ namespace RugMaster
             else r=meta!=null&&meta.rect!=null&&meta.rect.Length==4?new Rect(meta.rect[0],meta.rect[1],meta.rect[2],meta.rect[3]):new Rect(0,0,t.width,t.height);
             Position(image.rectTransform,new Rect(anchor.x+r.x*scale,anchor.y+r.y*scale,r.width*scale,r.height*scale));
         }
+        // ---- Tem "xong giỏ" (kit-seal) - giống game gốc ----
+        // Dải vải con dấu hoàn thành quấn ngang giữa thành trước rổ như demo: rổ hàng đầu thành trước (basket-front)
+        // rộng 310 (kể cả bo cạnh), cao từ y -146 tới +4 so với đáy -> dải rộng 300, tâm y -70. Rổ con: mặt trước y 144..260
+        // của ảnh rổ (tâm cách đáy 58px * QueueBasketScale), bề rộng thu theo QueueToFrontScale.
+        // Scale theo bề rộng hiển thị cố định nên thay ảnh to/nhỏ khác cỡ vẫn giữ nguyên kích thước trên màn.
+        private const float SealWidth=300f,SealFrontY=-70f;
+        private static void SetSeal(RawImage image,bool front)
+        {
+            var sealTex=RugOriginalAssets.Texture("kit-seal");
+            float sealWidth=front?SealWidth:SealWidth*QueueToFrontScale;
+            SetKit(image,"seal",new Vector2(0,front?SealFrontY:-58f*QueueBasketScale),sealTex!=null&&sealTex.width>0?sealWidth/sealTex.width:0.65f);
+        }
         private static void SetKit(RawImage image,string key,Vector2 center,float scale,Vector2? pivot=null)
         {
             string name=key.StartsWith("qtag-")?key:"kit-"+key;
@@ -1015,25 +1032,41 @@ namespace RugMaster
             return headSlotSprite;
         }
 
-        // ---- Thanh Collection load: không dùng 101 ảnh meter-N nữa mà ghép track + fill (9-slice) và cắt fill theo % ----
+        // ---- Thanh Collection load (giống game gốc): ghép track + fill theo % thay cho 101 ảnh meter-N ----
         // Nền xám kit-loadTrack; phần đã đầy là kit-loadFill (xanh < 80%), kit-loadFill-orange (80-99%), kit-loadFill-red (Full),
-        // ngưỡng màu đo từ ảnh meter-N gốc. Chữ "Collection load" + "N%" vẽ 2 lớp: trắng trong phần fill, nâu xám trên phần track
-        // (mép cắt thẳng như ảnh gốc). Vị trí/cỡ giữ như meter-0 (500x71 tại MeterAnchor).
+        // ngưỡng màu đo từ ảnh meter-N gốc. Fill nằm TRONG lòng xám của track (không đè viền trắng): viên thuốc bo tròn 2 đầu,
+        // dài từ 1 hình tròn (1%) tới hết lòng track (100%). Chữ "Collection load" + "N%" vẽ 2 lớp: trắng phía trên fill,
+        // nâu xám phía phần còn trống (tách tại mép phải fill). Vị trí/cỡ giữ như meter-0 (500x71 tại MeterAnchor).
+        // Khác game gốc: viên thuốc vẽ bằng RugMeterFillGraphic (mesh 3 đoạn, đầu bo theo chiều cao) thay cho Sprite.Create 9-slice,
+        // và tách 2 lớp chữ bằng Mask stencil thay cho RectMask2D (Luna chỉ cull chứ không cắt theo RectMask2D).
         private const float MeterTextInset=30;
+        // Viền trắng của kit-loadTrack (ảnh 313x82): trái/phải 9px, trên 15px, dưới 14px -> tỉ lệ theo chiều cao thanh.
+        private const float MeterBorderX=9f/82,MeterBorderTop=15f/82,MeterBorderBottom=14f/82;
         private static readonly Color MeterDarkText=new Color32(94,81,72,255);
         private static readonly Dictionary<string,Sprite> meterSprites=new Dictionary<string,Sprite>();
-        
+
         public RugMeterFillGraphic meterFill;
-        private Text meterPercentOn;
+        private RectTransform meterFillMask,meterRestMask;
+        private Text meterPercentOn,meterPercentOff;
         private void SetMeter(int percent)
         {
             if(meter==null)return;
             SetLocalSprite(meter,"meter-0",MeterAnchor);
             meter.texture=null;meter.color=Color.clear;meter.raycastTarget=false;
             EnsureMeterBar();
+            var size=meter.rectTransform.sizeDelta;
+            float insetX=size.y*MeterBorderX,innerW=size.x-2*insetX,innerH=size.y*(1-MeterBorderTop-MeterBorderBottom);
+            float k=Mathf.Clamp01(percent/100f);
+            float fillW=k<=0?0:Mathf.Lerp(innerH,innerW,k);
             string key=percent>=100?"kit-loadFill-red":percent>=80?"kit-loadFill-orange":"kit-loadFill";
-            meterFill.SetFill(Mathf.Clamp01(percent/100f),RugOriginalAssets.Texture(key));
-            meterPercentOn.text=percent>=100?"Full":percent+"%";
+            meterFill.gameObject.SetActive(fillW>0);
+            meterFill.rectTransform.sizeDelta=new Vector2(fillW,innerH);
+            meterFill.SetFill(1,RugOriginalAssets.Texture(key));
+            float split=fillW>0?insetX+fillW:0;
+            meterFillMask.sizeDelta=new Vector2(split,0);
+            meterRestMask.offsetMin=new Vector2(split,0);meterRestMask.offsetMax=Vector2.zero;
+            string value=percent>=100?"Full":percent+"%";
+            meterPercentOn.text=meterPercentOff.text=value;
         }
         private void EnsureMeterBar()
         {
@@ -1044,10 +1077,30 @@ namespace RugMaster
             var track=new GameObject("Track",typeof(RectTransform)).AddComponent<UnityEngine.UI.Image>();
             track.transform.SetParent(bar,false);Stretch(track.rectTransform);
             track.sprite=MeterSprite("kit-loadTrack");track.type=UnityEngine.UI.Image.Type.Sliced;track.raycastTarget=false;
-            meterFill=Rect(bar,"Fill geometry",0,0,size.x,size.y).gameObject.AddComponent<RugMeterFillGraphic>();
+            // Lòng xám của track; fill neo mép trái, cao bằng lòng track, rộng đặt theo % trong SetMeter.
+            var inner=Rect(bar,"Inner",0,0,0,0);Stretch(inner);
+            inner.offsetMin=new Vector2(size.y*MeterBorderX,size.y*MeterBorderBottom);
+            inner.offsetMax=new Vector2(-size.y*MeterBorderX,-size.y*MeterBorderTop);
+            meterFill=Rect(inner,"Fill",0,0,0,0).gameObject.AddComponent<RugMeterFillGraphic>();
+            AnchorFixed(meterFill.rectTransform,Vector2.zero,new Vector2(0,0.5f));
             meterFill.raycastTarget=false;meterFill.maskable=false;
-            meterFill.SetFill(0,RugOriginalAssets.Texture("kit-loadFill"));
-            MeterTexts(bar,size,new Vector2(0.5f,0.5f),Color.white,true,out meterPercentOn);
+            meterFill.SetFill(1,RugOriginalAssets.Texture("kit-loadFill"));
+            // Chữ nâu xám: từ mép phải fill tới hết thanh.
+            meterRestMask=Rect(bar,"Rest (dark text)",0,0,0,0);Stretch(meterRestMask);
+            MeterStencil(meterRestMask);
+            MeterTexts(meterRestMask,size,new Vector2(1,0.5f),MeterDarkText,false,out meterPercentOff);
+            // Chữ trắng: từ mép trái thanh tới mép phải fill.
+            meterFillMask=Rect(bar,"Fill text (clipped)",0,0,0,0);
+            meterFillMask.anchorMin=Vector2.zero;meterFillMask.anchorMax=new Vector2(0,1);meterFillMask.pivot=new Vector2(0,0.5f);
+            meterFillMask.anchoredPosition=Vector2.zero;meterFillMask.sizeDelta=Vector2.zero;
+            MeterStencil(meterFillMask);
+            MeterTexts(meterFillMask,size,new Vector2(0,0.5f),Color.white,true,out meterPercentOn);
+        }
+        // Vùng cắt chữ bằng Mask stencil (graphic trắng ẩn, showMaskGraphic=false) - Luna hỗ trợ đầy đủ.
+        private static void MeterStencil(RectTransform rect)
+        {
+            var shape=rect.gameObject.AddComponent<RawImage>();shape.texture=Texture2D.whiteTexture;shape.raycastTarget=false;
+            rect.gameObject.AddComponent<Mask>().showMaskGraphic=false;
         }
         // Khung chữ cỡ cố định bằng cả thanh, neo theo mép (trái cho fill, phải cho phần còn lại) để chữ không chạy theo mask.
         private RectTransform MeterTexts(RectTransform parent,Vector2 size,Vector2 edge,Color color,bool shadow,out Text percent)

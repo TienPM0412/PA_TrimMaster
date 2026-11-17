@@ -152,6 +152,13 @@ namespace RugMaster
         public static readonly float[] OutletX = { 235.5f, 541f, 846.5f };
         // Giãn đều: sợi nhanh lên khi khoảng trống phía trước lớn hơn LoopLength/số sợi, chậm lại khi nhỏ hơn.
         public const float SpacingGain = 1f, MaxSpacingChange = 0.5f;
+        // Về đích (như game gốc): đã cạo hết thảm mà chưa bị đầy ống thì chắc chắn sẽ thắng -> sợi trong ống tăng tốc dần
+        // (FinishBoostRamp đơn vị hệ số/giây) tới FinishBoost lần tốc độ thường để màn chơi kết thúc nhanh.
+        public const float FinishBoost = 3f, FinishBoostRamp = 2f;
+        /// <summary>Hệ số tăng tốc hiện tại của sợi trong ống (1 = bình thường).</summary>
+        public float SpeedBoost { get; private set; } = 1;
+        /// <summary>Tốc độ chạy trong ống hiện tại (chưa tính hệ số góc ngoặt / giãn đều).</summary>
+        public float ChannelSpeed => Speed * SpeedBoost;
         private readonly List<Fiber> lane = new List<Fiber>();
         public readonly LevelDefinition Definition;
         public readonly Cell[] Cells;
@@ -170,7 +177,7 @@ namespace RugMaster
         public string Notice = "";
         public Action<Cell> OnTrim;
         public Action<Basket> OnBasketCompleted;
-        public Action<Fiber> OnFiberLanded;
+        public Action<Fiber> OnFiberLanded, OnFiberEnterChannel;
         public Action OnWon, OnJammed;
         private int nextFiber;
         private readonly HashSet<int> cutSeen = new HashSet<int>();
@@ -405,12 +412,14 @@ namespace RugMaster
                     if (wasFront && next != null) next.Revealed = true;
                     releases.Add(new Release { Column = column, Remaining = 0.42f + revealDelay });
                 }
+            if (TrimmedCount == Cells.Length) SpeedBoost = Mathf.Min(FinishBoost, SpeedBoost + FinishBoostRamp * dt);
             SpaceChannel();
             for (int i = Fibers.Count - 1; i >= 0; i--)
             {
                 var f = Fibers[i];var before=f.Phase;
                 float previousX=before==FiberPhase.Channel?LoopPosition(f.Distance).x:0;
                 RugFiberMotion.Advance(f,dt,Elapsed);
+                if(before==FiberPhase.Flight&&f.Phase==FiberPhase.Channel)OnFiberEnterChannel?.Invoke(f);
                 if (before == FiberPhase.Capture)
                 {
                     if (f.Age < f.Duration) continue;
@@ -446,7 +455,7 @@ namespace RugMaster
             for (int i = 0; i < Fibers.Count; i++) if (Fibers[i].Phase == FiberPhase.Channel) lane.Add(Fibers[i]);
             int n = lane.Count;
             if (n == 0) return;
-            if (n == 1) { lane[0].SpeedScale = 1; return; }
+            if (n == 1) { lane[0].SpeedScale = SpeedBoost; return; }
             // Insertion sort: thứ tự gần như không đổi giữa các bước nên gần O(n), và không cấp phát.
             for (int i = 1; i < n; i++)
             {
@@ -462,7 +471,7 @@ namespace RugMaster
             for (int i = 0; i < n; i++)
             {
                 float error = offset + i * spacing - LaneTau(lane[i], origin);
-                lane[i].SpeedScale = 1 + Mathf.Clamp(error / spacing * SpacingGain, -MaxSpacingChange, MaxSpacingChange);
+                lane[i].SpeedScale = SpeedBoost * (1 + Mathf.Clamp(error / spacing * SpacingGain, -MaxSpacingChange, MaxSpacingChange));
             }
         }
         private static float LaneTau(Fiber f, float origin) =>

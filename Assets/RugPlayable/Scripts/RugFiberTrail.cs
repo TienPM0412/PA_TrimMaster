@@ -89,7 +89,7 @@ namespace RugMaster
                         if(!p.visible){p.dead=true;continue;}
                         p.capturing=true;p.sweep=f.Sweep;p.age=0;p.duration=f.Duration;p.from=p.pos;p.outletX=f.CaptureFrom.x;
                         p.to=f.CaptureTo+new Vector2(((p.k*0.37f)%1f-0.5f)*50,0);
-                        p.delay=f.Sweep?p.k*0.05f:p.k*GapTau/RugSimulation.Speed;
+                        p.delay=f.Sweep?p.k*0.05f:p.k*GapTau/model.ChannelSpeed;
                     }
                 }
             }
@@ -125,7 +125,7 @@ namespace RugMaster
             if(p.age<p.delay)
             {
                 // Chưa tới lượt: vẫn chạy tiếp theo ống tới đúng miệng xả mà sợi chính đã rơi xuống.
-                if(!p.sweep){p.dist+=RugSimulation.Speed*RugPipeFlow.Flow(p.dist)*dt;Follow(p,time,dt);p.from=p.pos;}
+                if(!p.sweep){p.dist+=simulation.ChannelSpeed*RugPipeFlow.Flow(p.dist)*dt;Follow(p,time,dt);p.from=p.pos;}
                 return;
             }
             float k=Mathf.Clamp01((p.age-p.delay)/p.duration);
